@@ -62,6 +62,15 @@ defmodule ElixirDruid.Query do
 		name: unquote(name),
 		fieldName: unquote(field_name)}
   end
+  defp build_aggregation({name, {:when, _, [aggregation, filter]}}) do
+    # XXX: is it correct to put the name on the "inner" aggregation,
+    # instead of the filtered one?
+    quote do
+      %{type: "filtered",
+        filter: unquote(build_filter(filter)),
+        aggregator: unquote(build_aggregation({name, aggregation}))}
+    end
+  end
 
   defp build_post_aggregations(post_aggregations) do
     Enum.map post_aggregations,

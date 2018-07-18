@@ -28,6 +28,32 @@ defmodule ElixirDruidTest do
     #IO.puts json
   end
 
+  test "builds a query with a filtered aggregation" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [
+        event_count: count(),
+        interesting_event_count: count() when dimensions.interesting == "true"
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["aggregations"] == [
+      %{"name" => "event_count",
+        "type" => "count"},
+      %{"type" => "filtered",
+        "filter" => %{"type" => "selector",
+                      "dimension" => "interesting",
+                      "value" => "true"},
+        # NB: it seems to be correct to put the name on the inner aggregator!
+        "aggregator" =>
+          %{"name" => "interesting_event_count",
+            "type" => "count"}}
+    ]
+    #IO.puts json
+  end
+
   test "set an aggregation after building the query" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
