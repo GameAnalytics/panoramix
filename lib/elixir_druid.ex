@@ -12,29 +12,35 @@ defmodule ElixirDruid do
   @spec post_query(atom, %ElixirDruid.Query{}) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
   def post_query(profile, query) do
-    broker_profiles = Application.get_env(:elixir_druid, :broker_profiles)
-    broker_profile = broker_profiles[profile]
-    url = broker_profile[:base_url] <> "/druid/v2"
-
-    options = http_options(url, broker_profile)
-
+    url_path = "/druid/v2"
     body = ElixirDruid.Query.to_json query
     headers = [{"Content-Type", "application/json"}]
 
-    request_and_decode(:post, url, body, headers, options)
+    request_and_decode(profile, :post, url_path, body, headers)
   end
 
   @spec status(atom) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
   def status(profile) do
-    broker_profiles = Application.get_env(:elixir_druid, :broker_profiles)
-    broker_profile = broker_profiles[profile]
-    url = broker_profile[:base_url] <> "/status"
-
-    options = http_options(url, broker_profile)
+    url_path = "/status"
+    body = ""
     headers = []
 
-    request_and_decode(:get, url, "", headers, options)
+    request_and_decode(profile, :get, url_path, body, headers)
+  end
+
+  defp request_and_decode(profile, method, url_path, body, headers) do
+    broker_profiles = Application.get_env(:elixir_druid, :broker_profiles)
+    broker_profile = broker_profiles[profile]
+    url = broker_profile[:base_url] <> url_path
+    options = http_options(url, broker_profile)
+
+    with {:ok, http_response} <-
+	 HTTPoison.request(method, url, body, headers, options),
+	 {:ok, body} <- maybe_handle_druid_error(http_response),
+	 {:ok, decoded} <- Jason.decode body do
+	   {:ok, decoded}
+	 end
   end
 
   defp http_options(url, broker_profile) do
@@ -57,15 +63,6 @@ defmodule ElixirDruid do
     else
       []
     end
-  end
-
-  defp request_and_decode(method, url, body, headers, options) do
-    with {:ok, http_response} <-
-	 HTTPoison.request(method, url, body, headers, options),
-	 {:ok, body} <- maybe_handle_druid_error(http_response),
-	 {:ok, decoded} <- Jason.decode body do
-	   {:ok, decoded}
-	 end
   end
 
   defp maybe_handle_druid_error(
