@@ -1,4 +1,5 @@
 # ElixirDruid
+[![Build Status](https://travis-ci.com/GameAnalytics/elixir_druid.svg?token=7iC72mSUZcJMSAvPBsAL&branch=master)](https://travis-ci.com/GameAnalytics/elixir_druid)
 
 A library for sending requests to [Druid][druid], based on
 [HTTPoison][httpoison].
