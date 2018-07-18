@@ -1,6 +1,7 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
-	     aggregators: [], filter: nil]
+	     aggregators: [], filter: nil, dimension: nil, metric: nil,
+	     threshold: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
     query_fields = [
@@ -32,6 +33,15 @@ defmodule ElixirDruid.Query do
   end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
+  end
+  defp build_query({:dimension, dimension}, query_fields) do
+    [dimension: dimension] ++ query_fields
+  end
+  defp build_query({:metric, metric}, query_fields) do
+    [metric: metric] ++ query_fields
+  end
+  defp build_query({:threshold, threshold}, query_fields) do
+    [threshold: threshold] ++ query_fields
   end
 
   defp build_aggregators(aggregators) do
@@ -141,11 +151,11 @@ defmodule ElixirDruid.Query do
 
   # TODO: handle dimension specs + extraction functions, not just "plain" dimensions
   defp maybe_build_dimension({{:., _, [{:dimensions, _, _}, dimension]}, _, _}) do
-    # dimension.foo
+    # dimensions.foo
     Atom.to_string dimension
   end
   defp maybe_build_dimension({{:., _, [Access, :get]}, _, [{:dimensions, _, _}, dimension]}) do
-    # dimension["foo"]
+    # dimensions["foo"]
     dimension
   end
   defp maybe_build_dimension(_) do
@@ -153,11 +163,18 @@ defmodule ElixirDruid.Query do
   end
 
   def to_json(query) do
-    Jason.encode! %{queryType: query.query_type,
-		    dataSource: query.data_source,
-		    intervals: query.intervals,
-		    granularity: query.granularity,
-		    aggregators: query.aggregators,
-		    filter: query.filter}
+    [queryType: query.query_type,
+     dataSource: query.data_source,
+     intervals: query.intervals,
+     granularity: query.granularity,
+     aggregators: query.aggregators,
+     filter: query.filter,
+     dimension: query.dimension,
+     metric: query.metric,
+     threshold: query.threshold,
+    ]
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+    |> Enum.into(%{})
+    |> Jason.encode!
   end
 end

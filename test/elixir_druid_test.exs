@@ -174,4 +174,19 @@ defmodule ElixirDruidTest do
                                        "dimension" => "foo",
                                        "value" => "bar"}]}
   end
+
+  test "build a topN query" do
+    query = ElixirDruid.Query.build "topN", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      dimension: "foo",
+      metric: "size",
+      threshold: 10
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "topN",
+             "dimension" => "foo",
+             "metric" => "size",
+             "threshold" => 10} = decoded
+  end
 end
