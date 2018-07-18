@@ -19,6 +19,14 @@ defmodule ElixirDruid do
     request_and_decode(profile, :post, url_path, body, headers)
   end
 
+  @spec post_query!(atom, %ElixirDruid.Query{}) :: term()
+  def post_query!(profile, query) do
+    case post_query(profile, query) do
+      {:ok, response} -> response
+      {:error, error} -> raise error
+    end
+  end
+
   @spec status(atom) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
   def status(profile) do
@@ -27,6 +35,14 @@ defmodule ElixirDruid do
     headers = []
 
     request_and_decode(profile, :get, url_path, body, headers)
+  end
+
+  @spec status!(atom) :: term()
+  def status!(profile) do
+    case status(profile) do
+      {:ok, response} -> response
+      {:error, error} -> raise error
+    end
   end
 
   defp request_and_decode(profile, method, url_path, body, headers) do
