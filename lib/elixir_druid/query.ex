@@ -1,7 +1,7 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
-	     aggregations: [], filter: nil, dimension: nil, metric: nil,
-	     threshold: nil, context: nil]
+	     aggregations: [], post_aggregations: nil, filter: nil,
+             dimension: nil, metric: nil, threshold: nil, context: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
     query_fields = [
@@ -31,6 +31,9 @@ defmodule ElixirDruid.Query do
   defp build_query({:aggregations, aggregations}, query_fields) do
     [aggregations: build_aggregations(aggregations)] ++ query_fields
   end
+  defp build_query({:post_aggregations, post_aggregations}, query_fields) do
+    [post_aggregations: build_post_aggregations(post_aggregations)] ++ query_fields
+  end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
   end
@@ -58,6 +61,41 @@ defmodule ElixirDruid.Query do
     quote do: %{type: unquote(aggregation_type),
 		name: unquote(name),
 		fieldName: unquote(field_name)}
+  end
+
+  defp build_post_aggregations(post_aggregations) do
+    Enum.map post_aggregations,
+    fn {name, post_aggregation} ->
+      pa = build_post_aggregation(post_aggregation)
+      quote do
+        Map.put(unquote(pa), :name, unquote(name))
+      end
+    end
+  end
+
+  defp build_post_aggregation({arith_op, _, [a, b]})
+  when arith_op in [:+, :-, :*, :/] do
+    pa1 = build_post_aggregation(a)
+    pa2 = build_post_aggregation(b)
+    quote do
+      %{type: "arithmetic",
+        fn: unquote(arith_op),
+        fields: [unquote(pa1), unquote(pa2)]}
+    end
+  end
+  defp build_post_aggregation({{:., _, [{:aggregations, _, _}, aggregation]}, _, _}) do
+    # aggregations.foo
+    quote do
+      %{type: "fieldAccess",
+        fieldName: unquote(aggregation)}
+    end
+  end
+  defp build_post_aggregation({{:., _, [Access, :get]}, _, [{:aggregations, _, _}, aggregation]}) do
+    # aggregations["foo"]
+    quote do
+      %{type: "fieldAccess",
+        fieldName: unquote(aggregation)}
+    end
   end
 
   defp build_filter({:==, _, [a, b]}) do
@@ -171,6 +209,7 @@ defmodule ElixirDruid.Query do
      intervals: query.intervals,
      granularity: query.granularity,
      aggregations: query.aggregations,
+     postAggregations: query.post_aggregations,
      filter: query.filter,
      dimension: query.dimension,
      metric: query.metric,
