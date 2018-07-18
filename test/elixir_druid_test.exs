@@ -11,34 +11,34 @@ defmodule ElixirDruidTest do
     #IO.puts ElixirDruid.Query.to_json(query)
   end
 
-  test "builds a query with an aggregator" do
+  test "builds a query with an aggregation" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
-      aggregators: [event_count: count(),
+      aggregations: [event_count: count(),
                     unique_ids: hyperUnique(:user_unique)]
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
-    assert decoded["aggregators"] == [%{"name" => "event_count",
-                                        "type" => "count"},
-                                      %{"name" => "unique_ids",
-                                        "type" => "hyperUnique",
-                                        "fieldName" => "user_unique"}]
+    assert decoded["aggregations"] == [%{"name" => "event_count",
+                                         "type" => "count"},
+                                       %{"name" => "unique_ids",
+                                         "type" => "hyperUnique",
+                                         "fieldName" => "user_unique"}]
     #IO.puts json
   end
 
-  test "set an aggregator after building the query" do
+  test "set an aggregation after building the query" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
     query = query |>
-      ElixirDruid.Query.set(aggregators: [event_count: count()])
+      ElixirDruid.Query.set(aggregations: [event_count: count()])
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
-    assert decoded["aggregators"] == [%{"name" => "event_count",
-                                        "type" => "count"}]
+    assert decoded["aggregations"] == [%{"name" => "event_count",
+                                         "type" => "count"}]
     #IO.puts json
   end
 

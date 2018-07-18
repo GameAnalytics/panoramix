@@ -1,6 +1,6 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
-	     aggregators: [], filter: nil, dimension: nil, metric: nil,
+	     aggregations: [], filter: nil, dimension: nil, metric: nil,
 	     threshold: nil, context: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
@@ -28,8 +28,8 @@ defmodule ElixirDruid.Query do
   defp build_query({:granularity, granularity}, query_fields) do
     [granularity: granularity] ++ query_fields
   end
-  defp build_query({:aggregators, aggregators}, query_fields) do
-    [aggregators: build_aggregators(aggregators)] ++ query_fields
+  defp build_query({:aggregations, aggregations}, query_fields) do
+    [aggregations: build_aggregations(aggregations)] ++ query_fields
   end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
@@ -47,15 +47,15 @@ defmodule ElixirDruid.Query do
     [context: context] ++ query_fields
   end
 
-  defp build_aggregators(aggregators) do
-    Enum.map aggregators, &build_aggregator/1
+  defp build_aggregations(aggregations) do
+    Enum.map aggregations, &build_aggregation/1
   end
 
-  defp build_aggregator({name, {:count, _, []}}) do
+  defp build_aggregation({name, {:count, _, []}}) do
     quote do: %{type: "count", name: unquote name}
   end
-  defp build_aggregator({name, {aggregator_type, _, [field_name]}}) do
-    quote do: %{type: unquote(aggregator_type),
+  defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
+    quote do: %{type: unquote(aggregation_type),
 		name: unquote(name),
 		fieldName: unquote(field_name)}
   end
@@ -170,7 +170,7 @@ defmodule ElixirDruid.Query do
      dataSource: query.data_source,
      intervals: query.intervals,
      granularity: query.granularity,
-     aggregators: query.aggregators,
+     aggregations: query.aggregations,
      filter: query.filter,
      dimension: query.dimension,
      metric: query.metric,
