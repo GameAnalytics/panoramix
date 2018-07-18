@@ -1,7 +1,7 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
 	     aggregators: [], filter: nil, dimension: nil, metric: nil,
-	     threshold: nil]
+	     threshold: nil, context: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
     query_fields = [
@@ -42,6 +42,9 @@ defmodule ElixirDruid.Query do
   end
   defp build_query({:threshold, threshold}, query_fields) do
     [threshold: threshold] ++ query_fields
+  end
+  defp build_query({:context, context}, query_fields) do
+    [context: context] ++ query_fields
   end
 
   defp build_aggregators(aggregators) do
@@ -172,6 +175,7 @@ defmodule ElixirDruid.Query do
      dimension: query.dimension,
      metric: query.metric,
      threshold: query.threshold,
+     context: query.context,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
