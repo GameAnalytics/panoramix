@@ -8,13 +8,16 @@ defmodule ElixirDruid.Query do
       data_source: data_source
     ]
     query_fields = List.foldl(kw, query_fields, &build_query/2)
-    {:%, [], [ElixirDruid.Query, {:%{}, [], query_fields}]}
+    quote do
+      ElixirDruid.Query.__struct__(unquote(query_fields))
+    end
   end
 
   defmacro set(query, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
-    query_fields_map = {:%{}, [], query_fields}
-    quote do: Map.merge(unquote(query), unquote(query_fields_map))
+    quote do
+      Map.merge(unquote(query), Map.new unquote(query_fields))
+    end
   end
 
   defp build_query({:intervals, intervals}, query_fields) do
