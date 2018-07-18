@@ -156,4 +156,22 @@ defmodule ElixirDruidTest do
                                   "ordering" => "lexicographic"}
   end
 
+  test "add extra filter to existing query" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo == "bar"
+    query = ElixirDruid.Query.set query,
+      filter: dimensions.bar == "baz" and query.filter
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "and",
+                                  "fields" =>
+                                    [%{"type" => "selector",
+                                       "dimension" => "bar",
+                                       "value" => "baz"},
+                                     %{"type" => "selector",
+                                       "dimension" => "foo",
+                                       "value" => "bar"}]}
+  end
 end
