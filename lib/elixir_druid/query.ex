@@ -127,6 +127,17 @@ defmodule ElixirDruid.Query do
 	ordering: ordering}
     end
   end
+  defp build_filter(expression) do
+    # Anything else - it's probably a map coming from an existing
+    # filter.  Let's match on it at run time.
+    quote do
+      case unquote(expression) do
+	%{type: _} = filter ->
+	  # Looks like a filter!
+	  filter
+      end
+    end
+  end
 
   # TODO: handle dimension specs + extraction functions, not just "plain" dimensions
   defp maybe_build_dimension({{:., _, [{:dimensions, _, _}, dimension]}, _, _}) do
