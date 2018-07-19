@@ -112,6 +112,19 @@ defmodule ElixirDruid.Query do
         value: unquote(constant)}
     end
   end
+  defp build_post_aggregation({:hyperUniqueCardinality, _, [field_name]}) do
+    quote do
+      %{type: "hyperUniqueCardinality",
+        fieldName: unquote(field_name)}
+    end
+  end
+  defp build_post_aggregation({post_aggregator, _, fields = [_|_]})
+  when post_aggregator in [:doubleGreatest, :longGreatest, :doubleLeast, :longLeast] do
+    quote do
+      %{type: unquote(post_aggregator),
+        fields: unquote(fields)}
+    end
+  end
 
   defp build_filter({:==, _, [a, b]}) do
     dimension_a = maybe_build_dimension(a)

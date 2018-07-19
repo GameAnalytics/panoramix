@@ -256,7 +256,7 @@ defmodule ElixirDruidTest do
               ]}] == decoded["postAggregations"]
   end
 
-    test "build a query with an arithmetic post-aggregation including constant" do
+  test "build a query with an arithmetic post-aggregation including constant" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
@@ -282,6 +282,27 @@ defmodule ElixirDruidTest do
                   ]},
                 %{"type" => "constant",
                   "value" => 100}]}] == decoded["postAggregations"]
+  end
+
+  test "build a query with post-aggregation functions" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)],
+      post_aggregations: [
+        cardinality: hyperUniqueCardinality(:unique_ids),
+        greatest: doubleGreatest(:event_count, :unique_ids)
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert [%{"type" => "hyperUniqueCardinality",
+              "name" => "cardinality",
+              "fieldName" => "unique_ids"},
+            %{"type" => "doubleGreatest",
+              "name" => "greatest",
+              "fields" => ["event_count", "unique_ids"]}] == decoded["postAggregations"]
   end
 
 end
