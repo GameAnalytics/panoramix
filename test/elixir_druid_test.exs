@@ -11,34 +11,60 @@ defmodule ElixirDruidTest do
     #IO.puts ElixirDruid.Query.to_json(query)
   end
 
-  test "builds a query with an aggregator" do
+  test "builds a query with an aggregation" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
-      aggregators: [event_count: count(),
+      aggregations: [event_count: count(),
                     unique_ids: hyperUnique(:user_unique)]
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
-    assert decoded["aggregators"] == [%{"name" => "event_count",
-                                        "type" => "count"},
-                                      %{"name" => "unique_ids",
-                                        "type" => "hyperUnique",
-                                        "fieldName" => "user_unique"}]
+    assert decoded["aggregations"] == [%{"name" => "event_count",
+                                         "type" => "count"},
+                                       %{"name" => "unique_ids",
+                                         "type" => "hyperUnique",
+                                         "fieldName" => "user_unique"}]
     #IO.puts json
   end
 
-  test "set an aggregator after building the query" do
+  test "builds a query with a filtered aggregation" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [
+        event_count: count(),
+        interesting_event_count: count() when dimensions.interesting == "true"
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["aggregations"] == [
+      %{"name" => "event_count",
+        "type" => "count"},
+      %{"type" => "filtered",
+        "filter" => %{"type" => "selector",
+                      "dimension" => "interesting",
+                      "value" => "true"},
+        # NB: it seems to be correct to put the name on the inner aggregator!
+        "aggregator" =>
+          %{"name" => "interesting_event_count",
+            "type" => "count"}}
+    ]
+    #IO.puts json
+  end
+
+  test "set an aggregation after building the query" do
     query = ElixirDruid.Query.build "timeseries", "my_datasource",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
     query = query |>
-      ElixirDruid.Query.set(aggregators: [event_count: count()])
+      ElixirDruid.Query.set(aggregations: [event_count: count()])
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
-    assert decoded["aggregators"] == [%{"name" => "event_count",
-                                        "type" => "count"}]
+    assert decoded["aggregations"] == [%{"name" => "event_count",
+                                         "type" => "count"}]
     #IO.puts json
   end
 
@@ -206,4 +232,77 @@ defmodule ElixirDruidTest do
              "queryId" => "my-unique-query-id",
              "skipEmptyBuckets" => true} = decoded["context"]
   end
+
+  test "build a query with an arithmetic post-aggregation" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)],
+      post_aggregations: [
+        mean_events_per_user: aggregations.event_count / aggregations["unique_ids"]
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert [%{"type" => "arithmetic",
+              "name" => "mean_events_per_user",
+              "fn" => "/",
+              "fields" => [
+                %{"type" => "fieldAccess",
+                  "fieldName" => "event_count"},
+                %{"type" => "fieldAccess",
+                  "fieldName" => "unique_ids"}
+              ]}] == decoded["postAggregations"]
+  end
+
+  test "build a query with an arithmetic post-aggregation including constant" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)],
+      post_aggregations: [
+        mean_events_per_user_pct: aggregations.event_count / aggregations["unique_ids"] * 100
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert [%{"type" => "arithmetic",
+              "name" => "mean_events_per_user_pct",
+              "fn" => "*",
+              "fields" => [
+                %{"type" => "arithmetic",
+                  "fn" => "/",
+                  "fields" => [
+                    %{"type" => "fieldAccess",
+                      "fieldName" => "event_count"},
+                    %{"type" => "fieldAccess",
+                      "fieldName" => "unique_ids"}
+                  ]},
+                %{"type" => "constant",
+                  "value" => 100}]}] == decoded["postAggregations"]
+  end
+
+  test "build a query with post-aggregation functions" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)],
+      post_aggregations: [
+        cardinality: hyperUniqueCardinality(:unique_ids),
+        greatest: doubleGreatest(:event_count, :unique_ids)
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert [%{"type" => "hyperUniqueCardinality",
+              "name" => "cardinality",
+              "fieldName" => "unique_ids"},
+            %{"type" => "doubleGreatest",
+              "name" => "greatest",
+              "fields" => ["event_count", "unique_ids"]}] == decoded["postAggregations"]
+  end
+
 end

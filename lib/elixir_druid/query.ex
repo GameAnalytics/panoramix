@@ -1,7 +1,7 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
-	     aggregators: [], filter: nil, dimension: nil, metric: nil,
-	     threshold: nil, context: nil]
+	     aggregations: [], post_aggregations: nil, filter: nil,
+             dimension: nil, metric: nil, threshold: nil, context: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
     query_fields = [
@@ -28,8 +28,11 @@ defmodule ElixirDruid.Query do
   defp build_query({:granularity, granularity}, query_fields) do
     [granularity: granularity] ++ query_fields
   end
-  defp build_query({:aggregators, aggregators}, query_fields) do
-    [aggregators: build_aggregators(aggregators)] ++ query_fields
+  defp build_query({:aggregations, aggregations}, query_fields) do
+    [aggregations: build_aggregations(aggregations)] ++ query_fields
+  end
+  defp build_query({:post_aggregations, post_aggregations}, query_fields) do
+    [post_aggregations: build_post_aggregations(post_aggregations)] ++ query_fields
   end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
@@ -47,17 +50,80 @@ defmodule ElixirDruid.Query do
     [context: context] ++ query_fields
   end
 
-  defp build_aggregators(aggregators) do
-    Enum.map aggregators, &build_aggregator/1
+  defp build_aggregations(aggregations) do
+    Enum.map aggregations, &build_aggregation/1
   end
 
-  defp build_aggregator({name, {:count, _, []}}) do
+  defp build_aggregation({name, {:count, _, []}}) do
     quote do: %{type: "count", name: unquote name}
   end
-  defp build_aggregator({name, {aggregator_type, _, [field_name]}}) do
-    quote do: %{type: unquote(aggregator_type),
+  defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
+    quote do: %{type: unquote(aggregation_type),
 		name: unquote(name),
 		fieldName: unquote(field_name)}
+  end
+  defp build_aggregation({name, {:when, _, [aggregation, filter]}}) do
+    # XXX: is it correct to put the name on the "inner" aggregation,
+    # instead of the filtered one?
+    quote do
+      %{type: "filtered",
+        filter: unquote(build_filter(filter)),
+        aggregator: unquote(build_aggregation({name, aggregation}))}
+    end
+  end
+
+  defp build_post_aggregations(post_aggregations) do
+    Enum.map post_aggregations,
+    fn {name, post_aggregation} ->
+      pa = build_post_aggregation(post_aggregation)
+      quote do
+        Map.put(unquote(pa), :name, unquote(name))
+      end
+    end
+  end
+
+  defp build_post_aggregation({arith_op, _, [a, b]})
+  when arith_op in [:+, :-, :*, :/] do
+    pa1 = build_post_aggregation(a)
+    pa2 = build_post_aggregation(b)
+    quote do
+      %{type: "arithmetic",
+        fn: unquote(arith_op),
+        fields: [unquote(pa1), unquote(pa2)]}
+    end
+  end
+  defp build_post_aggregation({{:., _, [{:aggregations, _, _}, aggregation]}, _, _}) do
+    # aggregations.foo
+    quote do
+      %{type: "fieldAccess",
+        fieldName: unquote(aggregation)}
+    end
+  end
+  defp build_post_aggregation({{:., _, [Access, :get]}, _, [{:aggregations, _, _}, aggregation]}) do
+    # aggregations["foo"]
+    quote do
+      %{type: "fieldAccess",
+        fieldName: unquote(aggregation)}
+    end
+  end
+  defp build_post_aggregation(constant) when is_number(constant) do
+    quote do
+      %{type: "constant",
+        value: unquote(constant)}
+    end
+  end
+  defp build_post_aggregation({:hyperUniqueCardinality, _, [field_name]}) do
+    quote do
+      %{type: "hyperUniqueCardinality",
+        fieldName: unquote(field_name)}
+    end
+  end
+  defp build_post_aggregation({post_aggregator, _, fields = [_|_]})
+  when post_aggregator in [:doubleGreatest, :longGreatest, :doubleLeast, :longLeast] do
+    quote do
+      %{type: unquote(post_aggregator),
+        fields: unquote(fields)}
+    end
   end
 
   defp build_filter({:==, _, [a, b]}) do
@@ -170,7 +236,8 @@ defmodule ElixirDruid.Query do
      dataSource: query.data_source,
      intervals: query.intervals,
      granularity: query.granularity,
-     aggregators: query.aggregators,
+     aggregations: query.aggregations,
+     postAggregations: query.post_aggregations,
      filter: query.filter,
      dimension: query.dimension,
      metric: query.metric,
