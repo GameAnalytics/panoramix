@@ -174,4 +174,36 @@ defmodule ElixirDruidTest do
                                        "dimension" => "foo",
                                        "value" => "bar"}]}
   end
+
+  test "build a topN query" do
+    query = ElixirDruid.Query.build "topN", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      dimension: "foo",
+      metric: "size",
+      threshold: 10
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "topN",
+             "dimension" => "foo",
+             "metric" => "size",
+             "threshold" => 10} = decoded
+  end
+
+  test "build a query with a query context" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo == "bar",
+      context: %{timeout: 0,
+                 priority: 100,
+                 queryId: "my-unique-query-id",
+                 skipEmptyBuckets: true}
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"timeout" => 0,
+             "priority" => 100,
+             "queryId" => "my-unique-query-id",
+             "skipEmptyBuckets" => true} = decoded["context"]
+  end
 end
