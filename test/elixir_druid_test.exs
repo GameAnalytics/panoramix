@@ -255,4 +255,33 @@ defmodule ElixirDruidTest do
                   "fieldName" => "unique_ids"}
               ]}] == decoded["postAggregations"]
   end
+
+    test "build a query with an arithmetic post-aggregation including constant" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)],
+      post_aggregations: [
+        mean_events_per_user_pct: aggregations.event_count / aggregations["unique_ids"] * 100
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert [%{"type" => "arithmetic",
+              "name" => "mean_events_per_user_pct",
+              "fn" => "*",
+              "fields" => [
+                %{"type" => "arithmetic",
+                  "fn" => "/",
+                  "fields" => [
+                    %{"type" => "fieldAccess",
+                      "fieldName" => "event_count"},
+                    %{"type" => "fieldAccess",
+                      "fieldName" => "unique_ids"}
+                  ]},
+                %{"type" => "constant",
+                  "value" => 100}]}] == decoded["postAggregations"]
+  end
+
 end

@@ -106,6 +106,12 @@ defmodule ElixirDruid.Query do
         fieldName: unquote(aggregation)}
     end
   end
+  defp build_post_aggregation(constant) when is_number(constant) do
+    quote do
+      %{type: "constant",
+        value: unquote(constant)}
+    end
+  end
 
   defp build_filter({:==, _, [a, b]}) do
     dimension_a = maybe_build_dimension(a)
