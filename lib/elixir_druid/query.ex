@@ -21,12 +21,13 @@ defmodule ElixirDruid.Query do
     end
   end
 
-  defp build_query({:intervals, intervals}, query_fields) do
+  defp build_query({field, value}, query_fields)
+  when field in [:intervals, :granularity, :dimension, :metric,
+                 :threshold, :context]
+    do
+    # For these fields, we just include the value verbatim.
     # TODO: process intervals somehow?
-    [intervals: intervals] ++ query_fields
-  end
-  defp build_query({:granularity, granularity}, query_fields) do
-    [granularity: granularity] ++ query_fields
+    [{field, value}] ++ query_fields
   end
   defp build_query({:aggregations, aggregations}, query_fields) do
     [aggregations: build_aggregations(aggregations)] ++ query_fields
@@ -36,18 +37,6 @@ defmodule ElixirDruid.Query do
   end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
-  end
-  defp build_query({:dimension, dimension}, query_fields) do
-    [dimension: dimension] ++ query_fields
-  end
-  defp build_query({:metric, metric}, query_fields) do
-    [metric: metric] ++ query_fields
-  end
-  defp build_query({:threshold, threshold}, query_fields) do
-    [threshold: threshold] ++ query_fields
-  end
-  defp build_query({:context, context}, query_fields) do
-    [context: context] ++ query_fields
   end
 
   defp build_aggregations(aggregations) do
