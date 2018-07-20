@@ -305,4 +305,38 @@ defmodule ElixirDruidTest do
               "fields" => ["event_count", "unique_ids"]}] == decoded["postAggregations"]
   end
 
+  test "build a segmentMetadata query" do
+    query = ElixirDruid.Query.build "segmentMetadata", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      to_include: :all,
+      merge: true,
+      analysis_types: [:cardinality, :minmax]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "segmentMetadata",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+             "dataSource" => "my_datasource",
+             "toInclude" => %{"type" => "all"},
+             "merge" => true,
+             "analysisTypes" => ["cardinality", "minmax"]} == decoded
+  end
+
+  test "build a segmentMetadata query limited to certain columns" do
+    query = ElixirDruid.Query.build "segmentMetadata", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      to_include: ["foo", "bar"],
+      merge: true,
+      analysis_types: [:cardinality, :minmax]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "segmentMetadata",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+             "dataSource" => "my_datasource",
+             "toInclude" => %{"type" => "list", "columns" => ["foo", "bar"]},
+             "merge" => true,
+             "analysisTypes" => ["cardinality", "minmax"]} == decoded
+  end
+
 end
