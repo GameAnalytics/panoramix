@@ -23,12 +23,15 @@ defmodule ElixirDruid.Query do
   end
 
   defp build_query({field, value}, query_fields)
-  when field in [:intervals, :granularity, :dimension, :metric,
+  when field in [:granularity, :dimension, :metric,
                  :threshold, :context, :merge, :analysis_types]
     do
     # For these fields, we just include the value verbatim.
     # TODO: process intervals somehow?
     [{field, value}] ++ query_fields
+  end
+  defp build_query({:intervals, intervals}, query_fields) do
+    [intervals: build_intervals(intervals)] ++ query_fields
   end
   defp build_query({:aggregations, aggregations}, query_fields) do
     [aggregations: build_aggregations(aggregations)] ++ query_fields
@@ -51,6 +54,24 @@ defmodule ElixirDruid.Query do
              %{type: "list", columns: list}
          end
      end] ++ query_fields
+  end
+
+  defp build_intervals(intervals) do
+    Enum.map intervals, &build_interval/1
+  end
+
+  defp build_interval(interval) do
+    # mark as "generated" to avoid warnings about unreachable case
+    # clauses when interval is a constant
+    quote generated: true do
+      case unquote(interval) do
+        interval_string when is_binary(interval_string) ->
+          # Already a string - pass it on unchanged
+          interval_string
+        {from, to} ->
+          ElixirDruid.format_time!(from) <> "/" <> ElixirDruid.format_time!(to)
+      end
+    end
   end
 
   defp build_aggregations(aggregations) do
