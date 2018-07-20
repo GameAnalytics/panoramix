@@ -1,7 +1,8 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
-	     aggregations: [], post_aggregations: nil, filter: nil,
-             dimension: nil, metric: nil, threshold: nil, context: nil]
+	     aggregations: nil, post_aggregations: nil, filter: nil,
+             dimension: nil, metric: nil, threshold: nil, context: nil,
+             to_include: nil, merge: nil, analysis_types: nil]
 
   defmacro build(query_type, data_source, kw \\ []) do
     query_fields = [
@@ -23,7 +24,7 @@ defmodule ElixirDruid.Query do
 
   defp build_query({field, value}, query_fields)
   when field in [:intervals, :granularity, :dimension, :metric,
-                 :threshold, :context]
+                 :threshold, :context, :merge, :analysis_types]
     do
     # For these fields, we just include the value verbatim.
     # TODO: process intervals somehow?
@@ -37,6 +38,19 @@ defmodule ElixirDruid.Query do
   end
   defp build_query({:filter, filter}, query_fields) do
     [filter: build_filter(filter)] ++ query_fields
+  end
+  defp build_query({:to_include, to_include}, query_fields) do
+    [to_include:
+     quote do
+         case unquote(to_include) do
+           :all ->
+             %{type: "all"}
+           :none ->
+             %{type: "none"}
+           list when is_list(list) ->
+             %{type: "list", columns: list}
+         end
+     end] ++ query_fields
   end
 
   defp build_aggregations(aggregations) do
@@ -232,6 +246,9 @@ defmodule ElixirDruid.Query do
      metric: query.metric,
      threshold: query.threshold,
      context: query.context,
+     toInclude: query.to_include,
+     merge: query.merge,
+     analysisTypes: query.analysis_types,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
