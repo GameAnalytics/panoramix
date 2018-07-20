@@ -23,6 +23,7 @@ defmodule ElixirDruid.MixProject do
     [
       {:jason, "~> 1.1"},
       {:httpoison, "~> 1.0"},
+      {:timex, "~> 3.1"},
     ]
   end
 end

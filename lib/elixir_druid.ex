@@ -97,4 +97,23 @@ defmodule ElixirDruid do
       end
     {:error, %ElixirDruid.Error{message: message}}
   end
+
+  @doc ~S"""
+  Format a date or a datetime into a format that Druid expects.
+
+  ## Examples
+
+      iex> ElixirDruid.format_time! ~D[2018-07-20]
+      "2018-07-20"
+      iex> ElixirDruid.format_time!(
+      ...>   Timex.to_datetime({{2018,07,20},{1,2,3}}))
+      "2018-07-20T01:02:03+00:00"
+  """
+  def format_time!(%DateTime{} = datetime) do
+    Timex.format! datetime, "{ISO:Extended}"
+  end
+  def format_time!(%Date{} = date) do
+    Timex.format! date, "{ISOdate}"
+  end
+
 end

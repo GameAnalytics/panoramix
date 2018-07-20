@@ -339,4 +339,32 @@ defmodule ElixirDruidTest do
              "analysisTypes" => ["cardinality", "minmax"]} == decoded
   end
 
+  test "build a query using date structs" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: [{~D[2018-05-29], ~D[2018-06-05]}],
+      granularity: :day
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "granularity" => "day",
+             "intervals" => ["2018-05-29/2018-06-05"]} == decoded
+  end
+
+  test "build a query using datetime structs" do
+    from = Timex.to_datetime {{2018, 5, 29}, {1, 30, 0}}
+    to = Timex.to_datetime {{2018, 6, 5}, {18, 0, 0}}
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: [{from, to}],
+      granularity: :day
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "intervals" => ["2018-05-29T01:30:00+00:00/2018-06-05T18:00:00+00:00"],
+             "granularity" => "day"} == decoded
+  end
+
 end
