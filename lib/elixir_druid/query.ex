@@ -171,16 +171,47 @@ defmodule ElixirDruid.Query do
   defp build_filter({:and, _, [a, b]}) do
     filter_a = build_filter(a)
     filter_b = build_filter(b)
-    quote do: %{type: "and", fields: [unquote(filter_a), unquote(filter_b)]}
+    quote generated: true, bind_quoted: [filter_a: filter_a, filter_b: filter_b] do
+      case {filter_a, filter_b} do
+        {nil, nil} ->
+          # No filter AND no filter: that's "no filter"
+          nil
+        {nil, filter} ->
+          # No filter AND filter: just one filter
+          filter
+        {filter, nil} ->
+          # Likewise
+          filter
+        {_, _} ->
+          %{type: "and", fields: [filter_a, filter_b]}
+      end
+    end
   end
   defp build_filter({:or, _, [a, b]}) do
     filter_a = build_filter(a)
     filter_b = build_filter(b)
-    quote do: %{type: "or", fields: [unquote(filter_a), unquote(filter_b)]}
+    quote generated: true, bind_quoted: [filter_a: filter_a, filter_b: filter_b] do
+      # It's not meaningful to use 'or' with the empty filter,
+      # since the empty filter already allows anything.
+      unless filter_a do
+        raise "left operand to 'or' must not be nil"
+      end
+      unless filter_b do
+        raise "right operand to 'or' must not be nil"
+      end
+      %{type: "or", fields: [filter_a, filter_b]}
+    end
   end
   defp build_filter({:not, _, [a]}) do
     filter = build_filter(a)
-    quote do: %{type: "not", field: unquote(filter)}
+    quote generated: true, bind_quoted: [filter: filter] do
+      # It's not meaningful to use 'not' with the empty filter,
+      # since "not everything" would allow "nothing".
+      unless filter do
+        raise "operand to 'not' must not be nil"
+      end
+      %{type: "not", field: filter}
+    end
   end
   defp build_filter({:in, _, [a, values]}) do
     dimension = maybe_build_dimension(a)
@@ -230,14 +261,17 @@ defmodule ElixirDruid.Query do
 	ordering: ordering}
     end
   end
-  defp build_filter(expression) do
-    # Anything else - it's probably a map coming from an existing
-    # filter.  Let's match on it at run time.
-    quote do
-      case unquote(expression) do
+  defp build_filter({:^, _, [expression]}) do
+    # We're recycling the ^ operator to incorporate an already created
+    # filter into a filter expression.
+    quote bind_quoted: [expression: expression] do
+      case expression do
 	%{type: _} = filter ->
 	  # Looks like a filter!
 	  filter
+        nil ->
+          # nil is a valid filter as well
+          nil
       end
     end
   end
