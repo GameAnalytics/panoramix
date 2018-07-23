@@ -187,7 +187,7 @@ defmodule ElixirDruidTest do
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar"
     query = ElixirDruid.Query.set query,
-      filter: dimensions.bar == "baz" and query.filter
+      filter: dimensions.bar == "baz" and ^query.filter
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
@@ -199,6 +199,45 @@ defmodule ElixirDruidTest do
                                      %{"type" => "selector",
                                        "dimension" => "foo",
                                        "value" => "bar"}]}
+  end
+
+  test "add extra filter to a 'nil' filter with 'and'" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
+    # Adding a new filter here, when there is no existing filter,
+    # means that the new filter just gets used as the query filter.
+    query = ElixirDruid.Query.set query,
+      filter: dimensions.bar == "baz" and ^query.filter
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "selector",
+                                  "dimension" => "bar",
+                                  "value" => "baz"}
+  end
+
+  test "cannot add filter to 'nil' filter with 'or'" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
+    # It's not meaningful to use the empty filter in an "or" expression
+    assert_raise RuntimeError, "right operand to 'or' must not be nil", fn ->
+      ElixirDruid.Query.set query,
+        filter: dimensions.bar == "baz" or ^query.filter
+    end
+    assert_raise RuntimeError, "left operand to 'or' must not be nil", fn ->
+      ElixirDruid.Query.set query,
+        filter: ^query.filter or dimensions.bar == "baz"
+    end
+  end
+
+  test "cannot apply 'not' to 'nil' filter" do
+    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
+    # It's not meaningful to use the empty filter in an "or" expression
+    assert_raise RuntimeError, "operand to 'not' must not be nil", fn ->
+      ElixirDruid.Query.set query,
+        filter: not ^query.filter
+    end
   end
 
   test "build a topN query" do
