@@ -12,7 +12,9 @@ A library for sending requests to [Druid][druid], based on
 Build a query like this:
 
 ```elixir
-q = ElixirDruid.Query.build "timeseries", "my_datasource",
+use ElixirDruid
+q = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
       filter: dimensions.foo == "bar",

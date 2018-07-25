@@ -1,10 +1,11 @@
 defmodule ElixirDruidTest do
   use ExUnit.Case
   doctest ElixirDruid
-  require ElixirDruid.Query
+  use ElixirDruid
 
   test "builds a query" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
     assert is_binary(ElixirDruid.Query.to_json(query))
@@ -12,7 +13,8 @@ defmodule ElixirDruidTest do
   end
 
   test "builds a query with an aggregation" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
       aggregations: [event_count: count(),
@@ -29,7 +31,8 @@ defmodule ElixirDruidTest do
   end
 
   test "builds a query with a filtered aggregation" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
       aggregations: [
@@ -55,11 +58,12 @@ defmodule ElixirDruidTest do
   end
 
   test "set an aggregation after building the query" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
     query = query |>
-      ElixirDruid.Query.set(aggregations: [event_count: count()])
+      from(aggregations: [event_count: count()])
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
@@ -69,7 +73,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with column comparison filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == dimensions["bar"]
     json = ElixirDruid.Query.to_json(query)
@@ -80,7 +85,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with selector filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar"
     json = ElixirDruid.Query.to_json(query)
@@ -92,7 +98,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with two filters ANDed together" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar" and dimensions.bar == dimensions.foo
     json = ElixirDruid.Query.to_json(query)
@@ -108,7 +115,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with two filters ORed together" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar" or dimensions.bar == dimensions.foo
     json = ElixirDruid.Query.to_json(query)
@@ -124,7 +132,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with a NOT filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: not (dimensions.foo == "bar")
     json = ElixirDruid.Query.to_json(query)
@@ -139,7 +148,8 @@ defmodule ElixirDruidTest do
 
   test "build query with an 'in' filter" do
     x = "baz"
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo in ["bar", x]
     json = ElixirDruid.Query.to_json(query)
@@ -151,7 +161,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with a non-strict 'bound' filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: 1 <= dimensions.foo <= 10
     json = ElixirDruid.Query.to_json(query)
@@ -167,7 +178,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build query with a lower-strict 'bound' filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: ("aaa" < dimensions.foo) <= "bbb"
     json = ElixirDruid.Query.to_json(query)
@@ -183,10 +195,11 @@ defmodule ElixirDruidTest do
   end
 
   test "add extra filter to existing query" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar"
-    query = ElixirDruid.Query.set query,
+    query = from query,
       filter: dimensions.bar == "baz" and ^query.filter
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
@@ -202,11 +215,12 @@ defmodule ElixirDruidTest do
   end
 
   test "add extra filter to a 'nil' filter with 'and'" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
     # Adding a new filter here, when there is no existing filter,
     # means that the new filter just gets used as the query filter.
-    query = ElixirDruid.Query.set query,
+    query = from query,
       filter: dimensions.bar == "baz" and ^query.filter
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
@@ -217,31 +231,34 @@ defmodule ElixirDruidTest do
   end
 
   test "cannot add filter to 'nil' filter with 'or'" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
     # It's not meaningful to use the empty filter in an "or" expression
     assert_raise RuntimeError, "right operand to 'or' must not be nil", fn ->
-      ElixirDruid.Query.set query,
+      from query,
         filter: dimensions.bar == "baz" or ^query.filter
     end
     assert_raise RuntimeError, "left operand to 'or' must not be nil", fn ->
-      ElixirDruid.Query.set query,
+      from query,
         filter: ^query.filter or dimensions.bar == "baz"
     end
   end
 
   test "cannot apply 'not' to 'nil' filter" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
     # It's not meaningful to use the empty filter in an "or" expression
     assert_raise RuntimeError, "operand to 'not' must not be nil", fn ->
-      ElixirDruid.Query.set query,
+      from query,
         filter: not ^query.filter
     end
   end
 
   test "build a topN query" do
-    query = ElixirDruid.Query.build "topN", "my_datasource",
+    query = from "my_datasource",
+      query_type: "topN",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       dimension: "foo",
       metric: "size",
@@ -256,7 +273,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a query with a query context" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar",
       context: %{timeout: 0,
@@ -273,7 +291,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a query with an arithmetic post-aggregation" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
       aggregations: [event_count: count(),
@@ -296,7 +315,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a query with an arithmetic post-aggregation including constant" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
       aggregations: [event_count: count(),
@@ -324,7 +344,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a query with post-aggregation functions" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day,
       aggregations: [event_count: count(),
@@ -345,7 +366,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a segmentMetadata query" do
-    query = ElixirDruid.Query.build "segmentMetadata", "my_datasource",
+    query = from "my_datasource",
+      query_type: "segmentMetadata",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       to_include: :all,
       merge: true,
@@ -362,7 +384,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a segmentMetadata query limited to certain columns" do
-    query = ElixirDruid.Query.build "segmentMetadata", "my_datasource",
+    query = from "my_datasource",
+      query_type: "segmentMetadata",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       to_include: ["foo", "bar"],
       merge: true,
@@ -379,7 +402,8 @@ defmodule ElixirDruidTest do
   end
 
   test "build a query using date structs" do
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: [{~D[2018-05-29], ~D[2018-06-05]}],
       granularity: :day
     json = ElixirDruid.Query.to_json(query)
@@ -394,7 +418,8 @@ defmodule ElixirDruidTest do
   test "build a query using datetime structs" do
     from = Timex.to_datetime {{2018, 5, 29}, {1, 30, 0}}
     to = Timex.to_datetime {{2018, 6, 5}, {18, 0, 0}}
-    query = ElixirDruid.Query.build "timeseries", "my_datasource",
+    query = from "my_datasource",
+      query_type: "timeseries",
       intervals: [{from, to}],
       granularity: :day
     json = ElixirDruid.Query.to_json(query)

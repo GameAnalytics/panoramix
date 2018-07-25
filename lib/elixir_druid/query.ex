@@ -4,26 +4,24 @@ defmodule ElixirDruid.Query do
              dimension: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil]
 
-  defmacro build(query_type, data_source, kw \\ []) do
-    query_fields = [
-      query_type: query_type,
-      data_source: data_source
-    ]
-    query_fields = List.foldl(kw, query_fields, &build_query/2)
-    quote do
-      ElixirDruid.Query.__struct__(unquote(query_fields))
-    end
-  end
-
-  defmacro set(query, kw) do
+  defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
-    quote do
-      Map.merge(unquote(query), Map.new unquote(query_fields))
+    quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
+      query =
+        case source do
+          datasource when is_binary(datasource) ->
+            # Are we creating a new query from scratch, given a datasource?
+            %ElixirDruid.Query{data_source: datasource}
+          %ElixirDruid.Query{} ->
+            # Or are we extending an existing query?
+            source
+        end
+      Map.merge(query, Map.new query_fields)
     end
   end
 
   defp build_query({field, value}, query_fields)
-  when field in [:granularity, :dimension, :metric,
+  when field in [:granularity, :dimension, :metric, :query_type,
                  :threshold, :context, :merge, :analysis_types]
     do
     # For these fields, we just include the value verbatim.
@@ -290,6 +288,9 @@ defmodule ElixirDruid.Query do
   end
 
   def to_json(query) do
+    unless query.query_type do
+      raise "query type not specified"
+    end
     [queryType: query.query_type,
      dataSource: query.data_source,
      intervals: query.intervals,

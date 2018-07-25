@@ -116,4 +116,10 @@ defmodule ElixirDruid do
     Timex.format! date, "{ISOdate}"
   end
 
+  defmacro __using__(_params) do
+    quote do
+      import ElixirDruid.Query, only: [from: 2]
+    end
+  end
+
 end
