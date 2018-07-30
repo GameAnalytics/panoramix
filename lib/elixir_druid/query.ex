@@ -53,6 +53,9 @@ defmodule ElixirDruid.Query do
          end
      end] ++ query_fields
   end
+  defp build_query({unknown, _}, _query_fields) do
+    raise ArgumentError, "Unknown query field #{inspect unknown}"
+  end
 
   defp build_intervals(intervals) do
     Enum.map intervals, &build_interval/1
