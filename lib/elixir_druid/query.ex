@@ -1,7 +1,7 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
 	     aggregations: nil, post_aggregations: nil, filter: nil,
-             dimension: nil, metric: nil, threshold: nil, context: nil,
+             dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil]
 
   defmacro from(source, kw) do
@@ -21,7 +21,7 @@ defmodule ElixirDruid.Query do
   end
 
   defp build_query({field, value}, query_fields)
-  when field in [:granularity, :dimension, :metric, :query_type,
+  when field in [:granularity, :dimension, :dimensions, :metric, :query_type,
                  :threshold, :context, :merge, :analysis_types]
     do
     # For these fields, we just include the value verbatim.
@@ -299,6 +299,7 @@ defmodule ElixirDruid.Query do
      postAggregations: query.post_aggregations,
      filter: query.filter,
      dimension: query.dimension,
+     dimensions: query.dimensions,
      metric: query.metric,
      threshold: query.threshold,
      context: query.context,
