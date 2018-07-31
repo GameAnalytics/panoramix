@@ -256,6 +256,22 @@ defmodule ElixirDruidTest do
     end
   end
 
+  test "extract filter from JSON object" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo == "bar"
+    json = ElixirDruid.Query.to_json(query)
+    %{"filter" => filter} = Jason.decode! json
+    new_query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: ^filter
+    assert %{"filter" => %{"type" => "selector",
+                           "dimension" => "foo",
+                           "value" => "bar"}} = Jason.decode! ElixirDruid.Query.to_json new_query
+  end
+
   test "build a topN query" do
     query = from "my_datasource",
       query_type: "topN",
