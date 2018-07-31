@@ -1,8 +1,8 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
 	     aggregations: nil, post_aggregations: nil, filter: nil,
-             dimension: nil, metric: nil, threshold: nil, context: nil,
-             to_include: nil, merge: nil, analysis_types: nil]
+             dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
+             to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil]
 
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
@@ -21,8 +21,8 @@ defmodule ElixirDruid.Query do
   end
 
   defp build_query({field, value}, query_fields)
-  when field in [:granularity, :dimension, :metric, :query_type,
-                 :threshold, :context, :merge, :analysis_types]
+  when field in [:granularity, :dimension, :dimensions, :metric, :query_type,
+                 :threshold, :context, :merge, :analysis_types, :limit_spec]
     do
     # For these fields, we just include the value verbatim.
     # TODO: process intervals somehow?
@@ -52,6 +52,9 @@ defmodule ElixirDruid.Query do
              %{type: "list", columns: list}
          end
      end] ++ query_fields
+  end
+  defp build_query({unknown, _}, _query_fields) do
+    raise ArgumentError, "Unknown query field #{inspect unknown}"
   end
 
   defp build_intervals(intervals) do
@@ -299,12 +302,14 @@ defmodule ElixirDruid.Query do
      postAggregations: query.post_aggregations,
      filter: query.filter,
      dimension: query.dimension,
+     dimensions: query.dimensions,
      metric: query.metric,
      threshold: query.threshold,
      context: query.context,
      toInclude: query.to_include,
      merge: query.merge,
      analysisTypes: query.analysis_types,
+     limitSpec: query.limit_spec,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
