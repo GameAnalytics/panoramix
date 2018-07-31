@@ -270,6 +270,9 @@ defmodule ElixirDruid.Query do
 	%{type: _} = filter ->
 	  # Looks like a filter!
 	  filter
+        %{"type" => _} = filter ->
+          # Same, but the keys are strings, not atoms
+          filter
         nil ->
           # nil is a valid filter as well
           nil
