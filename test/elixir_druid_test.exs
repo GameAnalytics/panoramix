@@ -194,6 +194,18 @@ defmodule ElixirDruidTest do
                                   "ordering" => "lexicographic"}
   end
 
+  test "build query with an 'expression' filter" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: expression("foo / 1000 < bar")
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "expression",
+                                  "expression" => "foo / 1000 < bar"}
+  end
+
   test "add extra filter to existing query" do
     query = from "my_datasource",
       query_type: "timeseries",
