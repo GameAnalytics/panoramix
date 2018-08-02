@@ -1,5 +1,5 @@
 defmodule ElixirDruid.Query do
-  defstruct [query_type: nil, data_source: nil, intervals: [], granularity: nil,
+  defstruct [query_type: nil, data_source: nil, intervals: nil, granularity: nil,
 	     aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil]
