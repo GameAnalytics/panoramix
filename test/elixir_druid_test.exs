@@ -181,7 +181,7 @@ defmodule ElixirDruidTest do
     query = from "my_datasource",
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
-      filter: ("aaa" < dimensions.foo) <= "bbb"
+      filter: "aaa" < dimensions.foo <= "bbb"
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
