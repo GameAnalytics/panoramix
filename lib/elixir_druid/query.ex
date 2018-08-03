@@ -262,6 +262,14 @@ defmodule ElixirDruid.Query do
 	ordering: ordering}
     end
   end
+  defp build_filter({:expression, _, [expression]}) do
+    # A math expression, as described in http://druid.io/docs/0.12.1/misc/math-expr
+    # We're expecting a string that we're passing on to Druid
+    quote bind_quoted: [expression: expression] do
+      %{type: "expression",
+        expression: expression}
+    end
+  end
   defp build_filter({:^, _, [expression]}) do
     # We're recycling the ^ operator to incorporate an already created
     # filter into a filter expression.
