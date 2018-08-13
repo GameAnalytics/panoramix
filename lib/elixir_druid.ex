@@ -60,7 +60,7 @@ defmodule ElixirDruid do
   end
 
   defp http_options(url, broker_profile) do
-    ssl_options(url, broker_profile) ++ auth_options(broker_profile)
+    ssl_options(url, broker_profile) ++ auth_options(broker_profile) ++ timeout_options()
   end
 
   defp ssl_options(url, broker_profile) do
@@ -79,6 +79,12 @@ defmodule ElixirDruid do
     else
       []
     end
+  end
+
+  defp timeout_options() do
+    # Default to 120 seconds
+    request_timeout = Application.get_env(:elixir_druid, :request_timeout, 120_000)
+    [recv_timeout: request_timeout]
   end
 
   defp maybe_handle_druid_error(

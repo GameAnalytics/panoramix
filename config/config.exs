@@ -30,6 +30,7 @@ use Mix.Config
 #     import_config "#{Mix.env}.exs"
 
 config :elixir_druid,
+  request_timeout: 120_000,
   broker_profiles: [
     default: [
       base_url: "http://localhost:9088",
