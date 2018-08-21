@@ -11,7 +11,15 @@ defmodule ElixirDruid.Query do
         case source do
           datasource when is_binary(datasource) ->
             # Are we creating a new query from scratch, given a datasource?
-            %ElixirDruid.Query{data_source: datasource}
+            #
+            # Let's add a timeout in the query "context", as we need to
+            # tell Druid to cancel the query if it takes too long.
+            # We're going to close the HTTP connection on our end, so
+            # there is no point in Druid keeping processing.
+            timeout = Application.get_env(:elixir_druid, :request_timeout, 120_000)
+            %ElixirDruid.Query{
+              data_source: datasource,
+              context: %{timeout: timeout}}
           %ElixirDruid.Query{} ->
             # Or are we extending an existing query?
             source
