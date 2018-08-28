@@ -409,7 +409,7 @@ defmodule ElixirDruidTest do
              "toInclude" => %{"type" => "all"},
              "merge" => true,
              "analysisTypes" => ["cardinality", "minmax"],
-             "context" => %{"timeout" => 120_000}} == decoded
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
   test "build a segmentMetadata query limited to certain columns" do
@@ -428,7 +428,7 @@ defmodule ElixirDruidTest do
              "toInclude" => %{"type" => "list", "columns" => ["foo", "bar"]},
              "merge" => true,
              "analysisTypes" => ["cardinality", "minmax"],
-             "context" => %{"timeout" => 120_000}} == decoded
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
   test "build a query using date structs" do
@@ -443,7 +443,7 @@ defmodule ElixirDruidTest do
              "dataSource" => "my_datasource",
              "granularity" => "day",
              "intervals" => ["2018-05-29/2018-06-05"],
-             "context" => %{"timeout" => 120_000}} == decoded
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
   test "build a query using datetime structs" do
@@ -460,7 +460,7 @@ defmodule ElixirDruidTest do
              "dataSource" => "my_datasource",
              "intervals" => ["2018-05-29T01:30:00+00:00/2018-06-05T18:00:00+00:00"],
              "granularity" => "day",
-             "context" => %{"timeout" => 120_000}} == decoded
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
 end
