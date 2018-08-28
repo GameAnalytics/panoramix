@@ -31,6 +31,7 @@ use Mix.Config
 
 config :elixir_druid,
   request_timeout: 120_000,
+  query_priority: 0,
   broker_profiles: [
     default: [
       base_url: "http://localhost:9088",

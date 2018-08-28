@@ -17,9 +17,12 @@ defmodule ElixirDruid.Query do
             # We're going to close the HTTP connection on our end, so
             # there is no point in Druid keeping processing.
             timeout = Application.get_env(:elixir_druid, :request_timeout, 120_000)
+            # Also set the configured priority.  0 is what Druid picks if you
+            # don't specify a priority, so that seems to be a sensible default.
+            priority = Application.get_env(:elixir_druid, :query_priority, 0)
             %ElixirDruid.Query{
               data_source: datasource,
-              context: %{timeout: timeout}}
+              context: %{timeout: timeout, priority: priority}}
           %ElixirDruid.Query{} ->
             # Or are we extending an existing query?
             source
