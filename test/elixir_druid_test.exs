@@ -57,6 +57,26 @@ defmodule ElixirDruidTest do
     #IO.puts json
   end
 
+  test "builds a query with a filtered aggregation, but the filter is nil" do
+    my_filter = nil
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [
+        interesting_event_count: count() when ^my_filter
+      ]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    # In this case, there is no need to add a filter to the aggregator
+    assert decoded["aggregations"] == [
+      %{"name" => "interesting_event_count",
+        "type" => "count"}
+    ]
+    # IO.puts json
+  end
+
   test "set an aggregation after building the query" do
     query = from "my_datasource",
       query_type: "timeseries",

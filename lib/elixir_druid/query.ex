@@ -101,10 +101,19 @@ defmodule ElixirDruid.Query do
   defp build_aggregation({name, {:when, _, [aggregation, filter]}}) do
     # XXX: is it correct to put the name on the "inner" aggregation,
     # instead of the filtered one?
-    quote do
-      %{type: "filtered",
-        filter: unquote(build_filter(filter)),
-        aggregator: unquote(build_aggregation({name, aggregation}))}
+    quote generated: true, bind_quoted: [
+      filter: build_filter(filter),
+      aggregator: build_aggregation({name, aggregation})]
+      do
+      case filter do
+        nil ->
+          # There is no filter - just use the plain aggregator
+          aggregator
+        _ ->
+          %{type: "filtered",
+            filter: filter,
+            aggregator: aggregator}
+      end
     end
   end
 
