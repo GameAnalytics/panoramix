@@ -94,12 +94,19 @@ defmodule ElixirDruid do
   defp maybe_handle_druid_error(
     %HTTPoison.Response{status_code: status_code, body: body}) do
     message =
+      "Druid error (code #{status_code}): " <>
       case Jason.decode body do
-	{:ok, %{"error" => error}} ->
-	  # Sometimes body is a JSON object with an error field
-	  "Druid error (code #{status_code}): #{error}"
-	_ ->
-	  "Druid error (code #{status_code})"
+        {:ok, %{"error" => _} = decoded} ->
+	  # Usually we'll get a JSON object from Druid with "error",
+	  # "errorMessage", "errorClass" and "host".  Some of them
+          # might be null.
+          Enum.join(
+            for field <- ["errorMessage", "errorClass", "host"],
+            decoded[field] do
+              "#{field}: #{decoded[field]}"
+            end, " ")
+        _ ->
+	  "undecodable error: " <> body
       end
     {:error, %ElixirDruid.Error{message: message}}
   end
