@@ -66,7 +66,7 @@ defmodule ElixirDruid do
   defp ssl_options(url, broker_profile) do
     if url =~ ~r(^https://) do
       cacertfile = broker_profile[:cacertfile]
-      [ssl: [verify: :verify_peer, cacertfile: cacertfile]]
+      [ssl: [verify: :verify_peer, cacertfile: cacertfile, depth: 10]]
     else
       []
     end
