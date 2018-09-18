@@ -93,11 +93,6 @@ defmodule ElixirDruid.Query do
   defp build_aggregation({name, {:count, _, []}}) do
     quote do: %{type: "count", name: unquote name}
   end
-  defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
-    quote do: %{type: unquote(aggregation_type),
-		name: unquote(name),
-		fieldName: unquote(field_name)}
-  end
   defp build_aggregation({name, {:when, _, [aggregation, filter]}}) do
     # XXX: is it correct to put the name on the "inner" aggregation,
     # instead of the filtered one?
@@ -114,6 +109,27 @@ defmodule ElixirDruid.Query do
             filter: filter,
             aggregator: aggregator}
       end
+    end
+  end
+  defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
+    # e.g. hyperUnique(:user_unique)
+    quote do: %{type: unquote(aggregation_type),
+		name: unquote(name),
+		fieldName: unquote(field_name)}
+  end
+  defp build_aggregation({name, {aggregation_type, _, [field_name, keywords]}}) do
+    # e.g. hyperUnique(:user_unique, round: true)
+    quote generated: true, bind_quoted: [
+      aggregation_type: aggregation_type,
+      name: name,
+      field_name: field_name,
+      keywords: keywords]
+      do
+      Map.merge(
+        %{type: aggregation_type,
+	  name: name,
+	  fieldName: field_name},
+        Map.new(keywords))
     end
   end
 

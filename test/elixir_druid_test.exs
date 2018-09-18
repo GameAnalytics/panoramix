@@ -30,6 +30,25 @@ defmodule ElixirDruidTest do
     #IO.puts json
   end
 
+  test "builds a query with an aggregation that has an extra parameter" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      aggregations: [event_count: count(),
+                    unique_ids: hyperUnique(:user_unique, round: true)]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["aggregations"] == [%{"name" => "event_count",
+                                         "type" => "count"},
+                                       %{"name" => "unique_ids",
+                                         "type" => "hyperUnique",
+                                         "fieldName" => "user_unique",
+                                         "round" => true}]
+    #IO.puts json
+  end
+
   test "builds a query with a filtered aggregation" do
     query = from "my_datasource",
       query_type: "timeseries",
