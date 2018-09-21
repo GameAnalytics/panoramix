@@ -419,7 +419,8 @@ defmodule ElixirDruidTest do
                      unique_ids: hyperUnique(:user_unique)],
       post_aggregations: [
         cardinality: hyperUniqueCardinality(:unique_ids),
-        greatest: doubleGreatest(:event_count, :unique_ids)
+        greatest: doubleGreatest(:event_count, :unique_ids),
+        histogram: buckets(:histogram_data, bucketSize: 42, offset: 17)
       ]
     json = ElixirDruid.Query.to_json(query)
     assert is_binary(json)
@@ -429,7 +430,13 @@ defmodule ElixirDruidTest do
               "fieldName" => "unique_ids"},
             %{"type" => "doubleGreatest",
               "name" => "greatest",
-              "fields" => ["event_count", "unique_ids"]}] == decoded["postAggregations"]
+              "fields" => ["event_count", "unique_ids"]},
+            %{"name" => "histogram",
+              "type" => "buckets",
+              "fieldName" => "histogram_data",
+              "bucketSize" => 42,
+              "offset" => 17}
+           ] == decoded["postAggregations"]
   end
 
   test "build a segmentMetadata query" do
