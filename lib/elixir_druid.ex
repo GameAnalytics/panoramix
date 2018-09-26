@@ -101,7 +101,7 @@ defmodule ElixirDruid do
 	  # "errorMessage", "errorClass" and "host".  Some of them
           # might be null.
           Enum.join(
-            for field <- ["errorMessage", "errorClass", "host"],
+            for field <- ["error", "errorMessage", "errorClass", "host"],
             decoded[field] do
               "#{field}: #{decoded[field]}"
             end, " ")
