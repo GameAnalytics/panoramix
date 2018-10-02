@@ -36,7 +36,6 @@ defmodule ElixirDruid.Query do
                  :threshold, :context, :merge, :analysis_types, :limit_spec]
     do
     # For these fields, we just include the value verbatim.
-    # TODO: process intervals somehow?
     [{field, value}] ++ query_fields
   end
   defp build_query({:intervals, intervals}, query_fields) do
