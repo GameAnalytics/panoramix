@@ -2,7 +2,8 @@ defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: nil, granularity: nil,
 	     aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
-             to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil]
+             to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
+             bound: nil]
 
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
@@ -33,10 +34,20 @@ defmodule ElixirDruid.Query do
 
   defp build_query({field, value}, query_fields)
   when field in [:granularity, :dimension, :dimensions, :metric, :query_type,
-                 :threshold, :context, :merge, :analysis_types, :limit_spec]
-    do
+                 :threshold, :context, :merge, :analysis_types, :limit_spec] do
     # For these fields, we just include the value verbatim.
     [{field, value}] ++ query_fields
+  end
+  defp build_query({:bound, bound}, query_fields) do
+    [bound:
+     quote generated: true, bind_quoted: [bound: bound] do
+       value = String.Chars.to_string bound
+       unless value in ["maxTime", "minTime"] do
+         raise ArgumentError, "invalid bound value '#{value}', expected 'maxTime' or 'minTime'"
+       end
+       value
+     end
+    ] ++ query_fields
   end
   defp build_query({:intervals, intervals}, query_fields) do
     [intervals: build_intervals(intervals)] ++ query_fields
@@ -366,6 +377,7 @@ defmodule ElixirDruid.Query do
      merge: query.merge,
      analysisTypes: query.analysis_types,
      limitSpec: query.limit_spec,
+     bound: query.bound,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})

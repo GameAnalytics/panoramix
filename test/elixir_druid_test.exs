@@ -509,4 +509,16 @@ defmodule ElixirDruidTest do
              "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
+  test "build a timeBoundary query with a 'maxTime' bound" do
+    query = from "my_datasource",
+      query_type: "timeBoundary",
+      bound: :maxTime
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "timeBoundary",
+             "dataSource" => "my_datasource",
+             "bound" => "maxTime",
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
+  end
 end
