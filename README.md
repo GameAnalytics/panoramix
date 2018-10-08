@@ -16,10 +16,10 @@ use ElixirDruid
 q = from "my_datasource",
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
-      granularity: :day
+      granularity: :day,
       filter: dimensions.foo == "bar",
-      aggregators: [event_count: count(),
-                    unique_ids: hyperUnique(:user_unique)]
+      aggregations: [event_count: count(),
+                     unique_ids: hyperUnique(:user_unique)]
 ```
 
 And then send it:
