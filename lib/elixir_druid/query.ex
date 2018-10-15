@@ -269,6 +269,26 @@ defmodule ElixirDruid.Query do
       %{type: "not", field: filter}
     end
   end
+  # Let's handle the 'in' operator.  First, let's handle
+  # dimensions.foo in intervals([a, b])
+  # (where 'foo' will usually be '__time', a special dimension for
+  # the event timestamp)
+  defp build_filter({:in, _, [a, {:intervals, _, [intervals]}]}) do
+    dimension = maybe_build_dimension(a)
+    unless dimension do
+      raise "left operand of 'in' must be a dimension"
+    end
+    quote generated: true, bind_quoted: [
+      dimension: dimension,
+      intervals: build_intervals(intervals)
+    ] do
+      %{type: "interval",
+        dimension: dimension,
+        intervals: intervals}
+    end
+  end
+  # Now handle
+  # dimensions.foo in ["123", "456"]
   defp build_filter({:in, _, [a, values]}) do
     dimension = maybe_build_dimension(a)
     unless dimension do
