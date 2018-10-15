@@ -170,6 +170,30 @@ defmodule ElixirDruidTest do
                                        "dimensions" => ["bar", "foo"]}]}
   end
 
+  test "build query with AND and OR filters" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      # 'and' has higher precedence, so this should get parsed as
+      # (foo == "bar" or (bar == foo and baz == 17))
+      filter: dimensions.foo == "bar" or dimensions.bar == dimensions.foo and dimensions.baz == 17
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "or",
+                                  "fields" =>
+                                    [%{"type" => "selector",
+                                       "dimension" => "foo",
+                                       "value" => "bar"},
+                                     %{"type" => "and",
+                                       "fields" => [
+                                         %{"type" => "columnComparison",
+                                           "dimensions" => ["bar", "foo"]},
+                                         %{"type" => "selector",
+                                           "dimension" => "baz",
+                                           "value" => 17}]}]}
+  end
+
   test "build query with a NOT filter" do
     query = from "my_datasource",
       query_type: "timeseries",

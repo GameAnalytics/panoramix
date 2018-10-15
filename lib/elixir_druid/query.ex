@@ -228,8 +228,8 @@ defmodule ElixirDruid.Query do
   defp build_filter({:and, _, [a, b]}) do
     filter_a = build_filter(a)
     filter_b = build_filter(b)
-    quote generated: true, bind_quoted: [filter_a: filter_a, filter_b: filter_b] do
-      case {filter_a, filter_b} do
+    quote generated: true do
+      case {unquote(filter_a), unquote(filter_b)} do
         {nil, nil} ->
           # No filter AND no filter: that's "no filter"
           nil
@@ -239,24 +239,25 @@ defmodule ElixirDruid.Query do
         {filter, nil} ->
           # Likewise
           filter
-        {_, _} ->
-          %{type: "and", fields: [filter_a, filter_b]}
+        {filter_a_unquoted, filter_b_unquoted} ->
+          %{type: "and", fields: [filter_a_unquoted, filter_b_unquoted]}
       end
     end
   end
   defp build_filter({:or, _, [a, b]}) do
     filter_a = build_filter(a)
     filter_b = build_filter(b)
-    quote generated: true, bind_quoted: [filter_a: filter_a, filter_b: filter_b] do
+    quote generated: true do
       # It's not meaningful to use 'or' with the empty filter,
       # since the empty filter already allows anything.
-      unless filter_a do
-        raise "left operand to 'or' must not be nil"
+      case {unquote(filter_a), unquote(filter_b)} do
+        {nil, _} ->
+          raise "left operand to 'or' must not be nil"
+        {_, nil} ->
+          raise "right operand to 'or' must not be nil"
+        {filter_a_unquoted, filter_b_unquoted} ->
+          %{type: "or", fields: [filter_a_unquoted, filter_b_unquoted]}
       end
-      unless filter_b do
-        raise "right operand to 'or' must not be nil"
-      end
-      %{type: "or", fields: [filter_a, filter_b]}
     end
   end
   defp build_filter({:not, _, [a]}) do
