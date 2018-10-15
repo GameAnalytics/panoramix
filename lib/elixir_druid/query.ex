@@ -82,14 +82,10 @@ defmodule ElixirDruid.Query do
   end
 
   defp build_intervals(intervals) do
-    Enum.map intervals, &build_interval/1
-  end
-
-  defp build_interval(interval) do
     # mark as "generated" to avoid warnings about unreachable case
     # clauses when interval is a constant
-    quote generated: true do
-      case unquote(interval) do
+    quote generated: true, bind_quoted: [intervals: intervals] do
+      Enum.map intervals, fn
         interval_string when is_binary(interval_string) ->
           # Already a string - pass it on unchanged
           interval_string
