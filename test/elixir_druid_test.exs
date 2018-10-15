@@ -521,4 +521,28 @@ defmodule ElixirDruidTest do
              "bound" => "maxTime",
              "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
+
+  test "build a query with a virtual column" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      granularity: :day,
+      virtual_columns: [plus_one: expression("foo + 1", :long)],
+      aggregations: [plus_one_sum: longSum(:plus_one)]
+    json = ElixirDruid.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "granularity" => "day",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+             "virtualColumns" => [%{"name" => "plus_one",
+                                    "type" => "expression",
+                                    "expression" => "foo + 1",
+                                    "outputType" => "LONG"}],
+             "aggregations" => [%{"name" => "plus_one_sum",
+                                  "type" => "longSum",
+                                  "fieldName" => "plus_one"}],
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
+  end
 end

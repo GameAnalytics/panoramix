@@ -3,7 +3,7 @@ defmodule ElixirDruid.Query do
 	     aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
-             bound: nil]
+             bound: nil, virtual_columns: nil]
 
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
@@ -73,6 +73,9 @@ defmodule ElixirDruid.Query do
              %{type: "list", columns: list}
          end
      end] ++ query_fields
+  end
+  defp build_query({:virtual_columns, virtual_columns}, query_fields) do
+    [virtual_columns: build_virtual_columns(virtual_columns)] ++ query_fields
   end
   defp build_query({unknown, _}, _query_fields) do
     raise ArgumentError, "Unknown query field #{inspect unknown}"
@@ -357,6 +360,31 @@ defmodule ElixirDruid.Query do
     nil
   end
 
+  defp build_virtual_columns(virtual_columns) do
+    Enum.map virtual_columns, &build_virtual_column/1
+  end
+
+  defp build_virtual_column({name, {:expression, _, [expression, output_type]}}) do
+    quote generated: true, bind_quoted: [
+      name: name,
+      expression: expression,
+      output_type: output_type
+    ] do
+      output_type = String.upcase(String.Chars.to_string(output_type))
+      unless output_type in ["LONG", "FLOAT", "DOUBLE", "STRING"] do
+        raise ArgumentError, "Unexpected output type #{output_type}, expected one of :long, :float, :double, :string"
+      end
+      %{"type" => "expression",
+        "name" => name,
+        "outputType" => output_type,
+        "expression" => expression}
+    end
+  end
+  defp build_virtual_column({_name, {:expression, _, args}}) do
+    raise ArgumentError, "Expected 2 arguments to 'expression' in virtual column, expression and output type; " <>
+      "got #{length args}"
+  end
+
   def to_json(query) do
     unless query.query_type do
       raise "query type not specified"
@@ -378,6 +406,7 @@ defmodule ElixirDruid.Query do
      analysisTypes: query.analysis_types,
      limitSpec: query.limit_spec,
      bound: query.bound,
+     virtualColumns: query.virtual_columns,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
