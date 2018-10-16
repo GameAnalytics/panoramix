@@ -5,6 +5,9 @@ defmodule ElixirDruid.Query do
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
              bound: nil, virtual_columns: nil]
 
+  # A query has type ElixirDruid.query.t()
+  @type t :: %__MODULE__{}
+
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
     quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
