@@ -3,7 +3,7 @@ defmodule ElixirDruid.Query do
 	     aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
-             bound: nil]
+             bound: nil, virtual_columns: nil]
 
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
@@ -74,19 +74,18 @@ defmodule ElixirDruid.Query do
          end
      end] ++ query_fields
   end
+  defp build_query({:virtual_columns, virtual_columns}, query_fields) do
+    [virtual_columns: build_virtual_columns(virtual_columns)] ++ query_fields
+  end
   defp build_query({unknown, _}, _query_fields) do
     raise ArgumentError, "Unknown query field #{inspect unknown}"
   end
 
   defp build_intervals(intervals) do
-    Enum.map intervals, &build_interval/1
-  end
-
-  defp build_interval(interval) do
     # mark as "generated" to avoid warnings about unreachable case
     # clauses when interval is a constant
-    quote generated: true do
-      case unquote(interval) do
+    quote generated: true, bind_quoted: [intervals: intervals] do
+      Enum.map intervals, fn
         interval_string when is_binary(interval_string) ->
           # Already a string - pass it on unchanged
           interval_string
@@ -270,6 +269,26 @@ defmodule ElixirDruid.Query do
       %{type: "not", field: filter}
     end
   end
+  # Let's handle the 'in' operator.  First, let's handle
+  # dimensions.foo in intervals([a, b])
+  # (where 'foo' will usually be '__time', a special dimension for
+  # the event timestamp)
+  defp build_filter({:in, _, [a, {:intervals, _, [intervals]}]}) do
+    dimension = maybe_build_dimension(a)
+    unless dimension do
+      raise "left operand of 'in' must be a dimension"
+    end
+    quote generated: true, bind_quoted: [
+      dimension: dimension,
+      intervals: build_intervals(intervals)
+    ] do
+      %{type: "interval",
+        dimension: dimension,
+        intervals: intervals}
+    end
+  end
+  # Now handle
+  # dimensions.foo in ["123", "456"]
   defp build_filter({:in, _, [a, values]}) do
     dimension = maybe_build_dimension(a)
     unless dimension do
@@ -357,6 +376,31 @@ defmodule ElixirDruid.Query do
     nil
   end
 
+  defp build_virtual_columns(virtual_columns) do
+    Enum.map virtual_columns, &build_virtual_column/1
+  end
+
+  defp build_virtual_column({name, {:expression, _, [expression, output_type]}}) do
+    quote generated: true, bind_quoted: [
+      name: name,
+      expression: expression,
+      output_type: output_type
+    ] do
+      output_type = String.upcase(String.Chars.to_string(output_type))
+      unless output_type in ["LONG", "FLOAT", "DOUBLE", "STRING"] do
+        raise ArgumentError, "Unexpected output type #{output_type}, expected one of :long, :float, :double, :string"
+      end
+      %{"type" => "expression",
+        "name" => name,
+        "outputType" => output_type,
+        "expression" => expression}
+    end
+  end
+  defp build_virtual_column({_name, {:expression, _, args}}) do
+    raise ArgumentError, "Expected 2 arguments to 'expression' in virtual column, expression and output type; " <>
+      "got #{length args}"
+  end
+
   def to_json(query) do
     unless query.query_type do
       raise "query type not specified"
@@ -378,6 +422,7 @@ defmodule ElixirDruid.Query do
      analysisTypes: query.analysis_types,
      limitSpec: query.limit_spec,
      bound: query.bound,
+     virtualColumns: query.virtual_columns,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
