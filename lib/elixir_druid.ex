@@ -11,7 +11,7 @@ defmodule ElixirDruid do
 
   @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
-  def post_query(query, profile) do
+  def post_query(query, profile \\ :default) do
     url_path = "/druid/v2"
     body = ElixirDruid.Query.to_json query
     headers = [{"Content-Type", "application/json"}]
@@ -20,7 +20,7 @@ defmodule ElixirDruid do
   end
 
   @spec post_query!(%ElixirDruid.Query{}, atom()) :: term()
-  def post_query!(query, profile) do
+  def post_query!(query, profile \\ :default) do
     case post_query(query, profile) do
       {:ok, response} -> response
       {:error, error} -> raise error

@@ -31,3 +31,10 @@ ElixirDruid.post_query q, :default
 `:default` is a configuration profile pointing to your Druid server.
 See `config/config.exs`, where you can change the profile or add new
 ones.
+
+The default value for the profile argument is `:default`, so if you
+only need a single configuration you can omit it:
+
+```elixir
+ElixirDruid.post_query q
+```
