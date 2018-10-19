@@ -25,7 +25,7 @@ q = from "my_datasource",
 And then send it:
 
 ```elixir
-ElixirDruid.post_query :default, q
+ElixirDruid.post_query q, :default
 ```
 
 `:default` is a configuration profile pointing to your Druid server.
