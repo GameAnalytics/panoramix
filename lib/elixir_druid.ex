@@ -47,7 +47,8 @@ defmodule ElixirDruid do
 
   defp request_and_decode(profile, method, url_path, body, headers) do
     broker_profiles = Application.get_env(:elixir_druid, :broker_profiles)
-    broker_profile = broker_profiles[profile]
+    broker_profile = broker_profiles[profile] ||
+      raise ArgumentError, "no broker profile with name #{profile}"
     url = broker_profile[:base_url] <> url_path
     options = http_options(url, broker_profile)
 
