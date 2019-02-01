@@ -3,7 +3,8 @@ defmodule ElixirDruid.Query do
 	     aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
-             bound: nil, virtual_columns: nil]
+             bound: nil, virtual_columns: nil, limit: nil, search_dimensions: nil,
+             query: nil, sort: nil]
 
   # A query has type ElixirDruid.query.t()
   @type t :: %__MODULE__{}
@@ -37,7 +38,8 @@ defmodule ElixirDruid.Query do
 
   defp build_query({field, value}, query_fields)
   when field in [:granularity, :dimension, :dimensions, :metric, :query_type,
-                 :threshold, :context, :merge, :analysis_types, :limit_spec] do
+                 :threshold, :context, :merge, :analysis_types, :limit_spec,
+                 :limit, :search_dimensions, :query, :sort] do
     # For these fields, we just include the value verbatim.
     [{field, value}] ++ query_fields
   end
@@ -427,6 +429,10 @@ defmodule ElixirDruid.Query do
      limitSpec: query.limit_spec,
      bound: query.bound,
      virtualColumns: query.virtual_columns,
+     limit: query.limit,
+     searchDimensions: query.search_dimensions,
+     query: query.query,
+     sort: query.sort,
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
