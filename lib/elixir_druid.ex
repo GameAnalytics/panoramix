@@ -99,8 +99,8 @@ defmodule ElixirDruid do
       "Druid error (code #{status_code}): " <>
       case Jason.decode body do
         {:ok, %{"error" => _} = decoded} ->
-	  # Usually we'll get a JSON object from Druid with "error",
-	  # "errorMessage", "errorClass" and "host".  Some of them
+          # Usually we'll get a JSON object from Druid with "error",
+          # "errorMessage", "errorClass" and "host". Some of them
           # might be null.
           Enum.join(
             for field <- ["error", "errorMessage", "errorClass", "host"],
@@ -108,7 +108,7 @@ defmodule ElixirDruid do
               "#{field}: #{decoded[field]}"
             end, " ")
         _ ->
-	  "undecodable error: " <> body
+          "undecodable error: " <> body
       end
     {:error, %ElixirDruid.Error{message: message}}
   end

@@ -1,6 +1,6 @@
 defmodule ElixirDruid.Query do
   defstruct [query_type: nil, data_source: nil, intervals: nil, granularity: nil,
-	     aggregations: nil, post_aggregations: nil, filter: nil,
+             aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
              to_include: nil, merge: nil, analysis_types: nil, limit_spec: nil,
              bound: nil, virtual_columns: nil, limit: nil, search_dimensions: nil,
@@ -128,8 +128,8 @@ defmodule ElixirDruid.Query do
   defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
     # e.g. hyperUnique(:user_unique)
     quote do: %{type: unquote(aggregation_type),
-		name: unquote(name),
-		fieldName: unquote(field_name)}
+        name: unquote(name),
+        fieldName: unquote(field_name)}
   end
   defp build_aggregation({name, {aggregation_type, _, [field_name, keywords]}}) do
     # e.g. hyperUnique(:user_unique, round: true)
@@ -141,8 +141,8 @@ defmodule ElixirDruid.Query do
       do
       Map.merge(
         %{type: aggregation_type,
-	  name: name,
-	  fieldName: field_name},
+          name: name,
+          fieldName: field_name},
         Map.new(keywords))
     end
   end
@@ -216,17 +216,17 @@ defmodule ElixirDruid.Query do
     dimension_b = maybe_build_dimension(b)
     case {dimension_a, dimension_b} do
       {nil, _} ->
-	raise "left operand of == must be a dimension"
+        raise "left operand of == must be a dimension"
       {_, nil} ->
-	# Compare a dimension to a value
-	quote do: %{type: "selector",
-    		    dimension: unquote(dimension_a),
-    		    value: unquote(b)}
+        # Compare a dimension to a value
+        quote do: %{type: "selector",
+                    dimension: unquote(dimension_a),
+                    value: unquote(b)}
       {_, _} ->
-	# Compare two dimensions
-	quote do: %{type: "columnComparison",
-    		    dimensions: [unquote(dimension_a),
-				 unquote(dimension_b)]}
+        # Compare two dimensions
+        quote do: %{type: "columnComparison",
+                    dimensions: [unquote(dimension_a),
+                    unquote(dimension_b)]}
     end
   end
   defp build_filter({:and, _, [a, b]}) do
@@ -302,9 +302,8 @@ defmodule ElixirDruid.Query do
     end
     quote do: %{type: "in", dimension: unquote(dimension), values: unquote(values)}
   end
-  defp build_filter(
-    {lt1, _, [{lt2, _, [a, b]}, c]})
-  when lt1 in [:<, :<=] and lt2 in [:<, :<=] do
+  defp build_filter({lt1, _, [{lt2, _, [a, b]}, c]})
+    when lt1 in [:<, :<=] and lt2 in [:<, :<=] do
     # 1 < dimensions.foo < 10, or
     # 1 <= dimensions.foo <= 10
     #
@@ -326,21 +325,21 @@ defmodule ElixirDruid.Query do
       # when both are strings, and crash otherwise.
       # TODO: do we need "alphanumeric" and "strlen"?
       {lower, upper, ordering} =
-	case {unquote(a), unquote(c)} do
-	  {l, u} when is_integer(l) and is_integer(u) ->
-	    {Integer.to_string(l), Integer.to_string(u), "numeric"}
-	  {l, u} when is_float(l) and is_float(u) ->
-	    {Float.to_string(l), Float.to_string(u), "numeric"}
-	  {l, u} when is_binary(l) and is_binary(u) ->
-	    {l, u, "lexicographic"}
-	end
+    case {unquote(a), unquote(c)} do
+      {l, u} when is_integer(l) and is_integer(u) ->
+        {Integer.to_string(l), Integer.to_string(u), "numeric"}
+      {l, u} when is_float(l) and is_float(u) ->
+        {Float.to_string(l), Float.to_string(u), "numeric"}
+      {l, u} when is_binary(l) and is_binary(u) ->
+        {l, u, "lexicographic"}
+    end
       %{type: "bound",
-	dimension: unquote(dimension),
-	lower: lower,
-	upper: upper,
-	lowerStrict: unquote(lower_strict),
-	upperStrict: unquote(upper_strict),
-	ordering: ordering}
+        dimension: unquote(dimension),
+        lower: lower,
+        upper: upper,
+        lowerStrict: unquote(lower_strict),
+        upperStrict: unquote(upper_strict),
+        ordering: ordering}
     end
   end
   defp build_filter({:expression, _, [expression]}) do
@@ -356,9 +355,9 @@ defmodule ElixirDruid.Query do
     # filter into a filter expression.
     quote bind_quoted: [expression: expression] do
       case expression do
-	%{type: _} = filter ->
-	  # Looks like a filter!
-	  filter
+        %{type: _} = filter ->
+          # Looks like a filter!
+          filter
         %{"type" => _} = filter ->
           # Same, but the keys are strings, not atoms
           filter
