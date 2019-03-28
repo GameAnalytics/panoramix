@@ -1,4 +1,7 @@
 defmodule ElixirDruid.Query do
+  @moduledoc """
+  Provides functions for building Druid query requests.
+  """
   defstruct [query_type: nil, data_source: nil, intervals: nil, granularity: nil,
              aggregations: nil, post_aggregations: nil, filter: nil,
              dimension: nil, dimensions: nil, metric: nil, threshold: nil, context: nil,
