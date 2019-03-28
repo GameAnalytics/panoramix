@@ -24,6 +24,8 @@ defmodule ElixirDruid.MixProject do
       {:jason, "~> 1.1"},
       {:httpoison, "~> 1.0"},
       {:timex, "~> 3.1"},
+      {:dialyxir, "~> 1.0-rc.3", only: [:dev], runtime: false},
+      {:credo, "~> 0.9.3", only: [:dev, :test], runtime: false}
     ]
   end
 end
