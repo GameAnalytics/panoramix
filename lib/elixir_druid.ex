@@ -53,11 +53,12 @@ defmodule ElixirDruid do
     options = http_options(url, broker_profile)
 
     with {:ok, http_response} <-
-	 HTTPoison.request(method, url, body, headers, options),
-	 {:ok, body} <- maybe_handle_druid_error(http_response),
-	 {:ok, decoded} <- Jason.decode body do
-	   {:ok, decoded}
-	 end
+      HTTPoison.request(method, url, body, headers, options),
+      {:ok, body} <- maybe_handle_druid_error(http_response),
+      {:ok, decoded} <- Jason.decode body
+    do
+      {:ok, decoded}
+    end
   end
 
   defp http_options(url, broker_profile) do
