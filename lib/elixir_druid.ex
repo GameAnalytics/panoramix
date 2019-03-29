@@ -6,7 +6,74 @@ end
 defmodule ElixirDruid do
 
   @moduledoc """
-  Provides functions for posting queries and requesting status from Druid Broker.
+  Post a query or request status from Druid Broker.
+
+  Use ElixirDruid.Query to build a query.
+
+  ## Examples
+
+  Build a query like this:
+
+  ```elixir
+  use ElixirDruid
+
+  q = from "my_datasource",
+        query_type: "timeseries",
+        intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+        granularity: :day,
+        filter: dimensions.foo == "bar",
+         aggregations: [event_count: count(),
+                        unique_id_count: hyperUnique(:user_unique)]
+  ```
+
+  And then send it:
+
+  ```elixir
+  ElixirDruid.post_query(q, :default)
+  ```
+
+  Where `:default` is a configuration profile pointing to your Druid server.
+
+  The default value for the profile argument is `:default`, so if you
+  only need a single configuration you can omit it:
+
+  ```elixir
+  ElixirDruid.post_query(q)
+  ```
+
+  Response example:
+  ```elixir
+  {:ok,
+   [
+     %{
+       "result" => %{
+         "event_count" => 7544,
+         "unique_id_count" => 43.18210933535
+       },
+       "timestamp" => "2019-03-01T00:00:00.000Z"
+     },
+     %{
+       "result" => %{
+         "event_count" => 1051,
+         "unique_id_count" => 104.02052398847
+       },
+       "timestamp" => "2019-03-02T00:00:00.000Z"
+     },
+     %{
+       "result" => %{
+         "event_count" => 4591,
+         "unique_id_count" => 79.19885795313
+       },
+       "timestamp" => "2019-03-03T00:00:00.000Z"
+     }
+   ]}
+  ```
+
+  To request status from Broker run
+  ```elixir
+  ElixirDruid.status(:default)
+  ```
+
   """
 
   @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
