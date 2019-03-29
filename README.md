@@ -1,11 +1,48 @@
 # ElixirDruid
+=====
 [![Build Status](https://travis-ci.com/GameAnalytics/elixir_druid.svg?token=7iC72mSUZcJMSAvPBsAL&branch=master)](https://travis-ci.com/GameAnalytics/elixir_druid)
 
-A library for sending requests to [Druid][druid], based on
-[HTTPoison][httpoison].
+An open-source client library for sending requests to [Apache Druid][druid] from applications written in Elixir. The project uses [HTTPoison][httpoison] as an HTTP client for sending queries.
 
 [druid]: http://druid.io/
 [httpoison]: https://github.com/edgurgel/httpoison
+
+## Getting Started
+
+Add ElixirDruid as a dependency to your project.
+
+[//]: # (TODO - Replace GitHub dep with Hex.pm below)
+
+```elixir
+defp deps do
+  [
+    {:elixir_druid, github: "GameAnalytics/elixir_druid"}
+  ]
+end
+```
+
+## Configuration 
+
+ElixirDruid requires a Druid Broker profile to be defined in the configuration of your application.
+
+```elixir
+config :elixir_druid,
+  request_timeout: 120_000,
+  query_priority:  0,
+  broker_profiles: [
+    default: [
+      base_url:       "https://druid-broker-host:9088",
+      cacertfile:     "path/to/druid-certificate.crt",
+      http_username:  "username",
+      http_password:  "password"
+    ]
+  ]
+```
+
+* `request_timeout`: Query timeout in millis to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
+* `query_priority`: Priority to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
+
+[context-druid-doc-link]: http://druid.io/docs/latest/querying/query-context.html
 
 ## Usage
 
@@ -13,28 +50,61 @@ Build a query like this:
 
 ```elixir
 use ElixirDruid
+
 q = from "my_datasource",
       query_type: "timeseries",
-      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
       granularity: :day,
       filter: dimensions.foo == "bar",
-      aggregations: [event_count: count(),
-                     unique_ids: hyperUnique(:user_unique)]
+       aggregations: [event_count: count(), 
+                      unique_id_count: hyperUnique(:user_unique)]  
 ```
 
 And then send it:
 
 ```elixir
-ElixirDruid.post_query q, :default
+ElixirDruid.post_query(q, :default)
 ```
 
-`:default` is a configuration profile pointing to your Druid server.
-See `config/config.exs`, where you can change the profile or add new
-ones.
+Where `:default` is a configuration profile pointing to your Druid server.
 
 The default value for the profile argument is `:default`, so if you
 only need a single configuration you can omit it:
 
 ```elixir
-ElixirDruid.post_query q
+ElixirDruid.post_query(q)
 ```
+
+Response example:
+```elixir
+{:ok,
+ [
+   %{
+     "result" => %{
+       "event_count" => 7544,
+       "unique_id_count" => 43.18210933535
+     },
+     "timestamp" => "2019-03-01T00:00:00.000Z"
+   },
+   %{
+     "result" => %{
+       "event_count" => 1051,
+       "unique_id_count" => 104.02052398847
+     },
+     "timestamp" => "2019-03-02T00:00:00.000Z"
+   },
+   %{
+     "result" => %{
+       "event_count" => 4591,
+       "unique_id_count" => 79.19885795313
+     },
+     "timestamp" => "2019-03-03T00:00:00.000Z"
+   }
+ ]}
+```
+
+## Contributions
+[//]: # (TODO)
+
+## License
+[//]: # (TODO)
