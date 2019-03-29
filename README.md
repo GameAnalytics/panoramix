@@ -103,6 +103,20 @@ Response example:
  ]}
 ```
 
+## Troubleshooting
+
+You can check correctness of your configuration by requesting status from Druid Broker. A successfull response will look like this.
+
+```elixir
+iex(1)> ElixirDruid.status(:default)
+{:ok,
+ %{
+   "memory" => %{...},
+   "modules" => [...],
+   "version" => "0.13.0"
+ }}
+```
+
 ## Contributions
 [//]: # (TODO)
 
