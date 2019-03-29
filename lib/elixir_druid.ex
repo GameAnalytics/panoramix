@@ -53,11 +53,12 @@ defmodule ElixirDruid do
     options = http_options(url, broker_profile)
 
     with {:ok, http_response} <-
-	 HTTPoison.request(method, url, body, headers, options),
-	 {:ok, body} <- maybe_handle_druid_error(http_response),
-	 {:ok, decoded} <- Jason.decode body do
-	   {:ok, decoded}
-	 end
+      HTTPoison.request(method, url, body, headers, options),
+      {:ok, body} <- maybe_handle_druid_error(http_response),
+      {:ok, decoded} <- Jason.decode body
+    do
+      {:ok, decoded}
+    end
   end
 
   defp http_options(url, broker_profile) do
@@ -98,8 +99,8 @@ defmodule ElixirDruid do
       "Druid error (code #{status_code}): " <>
       case Jason.decode body do
         {:ok, %{"error" => _} = decoded} ->
-	  # Usually we'll get a JSON object from Druid with "error",
-	  # "errorMessage", "errorClass" and "host".  Some of them
+          # Usually we'll get a JSON object from Druid with "error",
+          # "errorMessage", "errorClass" and "host". Some of them
           # might be null.
           Enum.join(
             for field <- ["error", "errorMessage", "errorClass", "host"],
@@ -107,7 +108,7 @@ defmodule ElixirDruid do
               "#{field}: #{decoded[field]}"
             end, " ")
         _ ->
-	  "undecodable error: " <> body
+          "undecodable error: " <> body
       end
     {:error, %ElixirDruid.Error{message: message}}
   end

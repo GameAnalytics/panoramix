@@ -1,2 +1,20 @@
 language: elixir
 elixir: '1.6.5'
+otp_release: '21.0'
+script:
+    - mix compile --warnings-as-errors
+    - mix test
+    - mix dialyzer --halt-exit-status
+    - mix xref unreachable
+    - mix credo --ignore todo
+
+# We want to cache Dialyzer PLTs, in order not to have to rebuild them
+# every time. Dialyzer will automatically rebuild them when needed.
+# They are in _build/dev, but since we can only cache an entire
+# directory at a time, we need to remove _build/dev/{lib,rel} before
+# caching.
+before_cache:
+  - rm -rf _build/dev/lib _build/dev/rel
+cache:
+  directories:
+  - _build/dev
