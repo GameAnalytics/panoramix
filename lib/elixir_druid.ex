@@ -6,7 +6,7 @@ end
 defmodule ElixirDruid do
 
   @moduledoc """
-  Documentation for ElixirDruid.
+  Provides functions for posting queries and requesting status from Druid Broker.
   """
 
   @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
@@ -29,7 +29,7 @@ defmodule ElixirDruid do
 
   @spec status(atom) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
-  def status(profile) do
+  def status(profile \\ :default) do
     url_path = "/status"
     body = ""
     headers = []
@@ -38,7 +38,7 @@ defmodule ElixirDruid do
   end
 
   @spec status!(atom) :: term()
-  def status!(profile) do
+  def status!(profile \\ :default) do
     case status(profile) do
       {:ok, response} -> response
       {:error, error} -> raise error
