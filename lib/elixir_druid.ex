@@ -6,7 +6,7 @@ end
 defmodule ElixirDruid do
 
   @moduledoc """
-  Post a query or request status from Druid Broker.
+  Post a query to Druid Broker or request its status.
 
   Use ElixirDruid.Query to build a query.
 
@@ -75,6 +75,7 @@ defmodule ElixirDruid do
   ```
 
   """
+  @moduledoc since: "1.0.0"
 
   @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
