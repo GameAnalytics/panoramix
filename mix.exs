@@ -7,10 +7,12 @@ defmodule ElixirDruid.MixProject do
       version: "1.0.0",
       elixir: "~> 1.8.1",
       start_permanent: Mix.env() == :prod,
+      description: "Client library for sending requests to Druid.",
+      source_url: "https://github.com/gameanalytics/elixir_druid",
+      package: package(),
       deps: deps(),
 
       # Docs
-      # TODO - update before releasing
       name: "ElixirDruid",
       source_url: "https://github.com/GameAnalytics/elixir_druid",
       homepage_url: "https://github.com/GameAnalytics/elixir_druid",
@@ -18,6 +20,15 @@ defmodule ElixirDruid.MixProject do
         main: "ElixirDruid", # The main page in the docs
         extras: ["README.md"]
       ]
+    ]
+  end
+
+  defp package do
+    [
+      files: ["config", "lib", "mix.exs", "README*", "LICENSE*"],
+      maintainers: ["Magnus Henoch"],
+      licenses: ["Apache-2.0"],
+      links: %{github: "https://github.com/gameanalytics/elixir_druid"}
     ]
   end
 
