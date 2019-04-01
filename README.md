@@ -118,7 +118,9 @@ iex(1)> ElixirDruid.status(:default)
 ```
 
 ## Contributions
-[//]: # (TODO)
+We'd love to accept your contributions in a form of patches, bug reports and new features! 
+
+Before opening a pull request please make sure your changes pass all the tests. 
 
 ## License
 [//]: # (TODO)
