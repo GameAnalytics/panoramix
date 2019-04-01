@@ -4,7 +4,7 @@ defmodule ElixirDruid.MixProject do
   def project do
     [
       app: :elixir_druid,
-      version: "1.0.0",
+      version: System.cmd("git", ["describe", "--tags"]) |> elem(0) |> String.trim_trailing |> String.trim_leading("v"),
       elixir: "~> 1.8.1",
       start_permanent: Mix.env() == :prod,
       description: "Client library for sending requests to Druid.",
