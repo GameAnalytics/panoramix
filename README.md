@@ -134,4 +134,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the 
 specific language governing permissions and limitations under the License.
 
-The code was Copyright 2018-2019 GameAnalytics and/or its affiliates. 
+The code was Copyright 2018-2019 Game Analytics Limited and/or its affiliates. 
