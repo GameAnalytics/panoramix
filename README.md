@@ -1,6 +1,6 @@
 # Panoramix
 
-[![Build Status](https://travis-ci.com/GameAnalytics/panoramix.svg?token=7iC72mSUZcJMSAvPBsAL&branch=master)](https://travis-ci.com/GameAnalytics/panoramix)
+[![Build Status](https://travis-ci.org/GameAnalytics/panoramix.svg?branch=master)](https://travis-ci.org/GameAnalytics/panoramix)
 
 An open-source client library for sending requests to [Apache Druid][druid] from applications written in Elixir. The project uses [HTTPoison][httpoison] as an HTTP client for sending queries.
 
