@@ -1,6 +1,6 @@
-# ElixirDruid
-=====
-[![Build Status](https://travis-ci.com/GameAnalytics/elixir_druid.svg?token=7iC72mSUZcJMSAvPBsAL&branch=master)](https://travis-ci.com/GameAnalytics/elixir_druid)
+# Panoramix
+
+[![Build Status](https://travis-ci.com/GameAnalytics/panoramix.svg?token=7iC72mSUZcJMSAvPBsAL&branch=master)](https://travis-ci.com/GameAnalytics/panoramix)
 
 An open-source client library for sending requests to [Apache Druid][druid] from applications written in Elixir. The project uses [HTTPoison][httpoison] as an HTTP client for sending queries.
 
@@ -9,24 +9,24 @@ An open-source client library for sending requests to [Apache Druid][druid] from
 
 ## Getting Started
 
-Add ElixirDruid as a dependency to your project.
+Add Panoramix as a dependency to your project.
 
 [//]: # (TODO - Replace GitHub dep with Hex.pm below)
 
 ```elixir
 defp deps do
   [
-    {:elixir_druid, github: "GameAnalytics/elixir_druid"}
+    {:panoramix, github: "GameAnalytics/panoramix"}
   ]
 end
 ```
 
 ## Configuration 
 
-ElixirDruid requires a Druid Broker profile to be defined in the configuration of your application.
+Panoramix requires a Druid Broker profile to be defined in the configuration of your application.
 
 ```elixir
-config :elixir_druid,
+config :panoramix,
   request_timeout: 120_000,
   query_priority:  0,
   broker_profiles: [
@@ -49,7 +49,7 @@ config :elixir_druid,
 Build a query like this:
 
 ```elixir
-use ElixirDruid
+use Panoramix
 
 q = from "my_datasource",
       query_type: "timeseries",
@@ -63,7 +63,7 @@ q = from "my_datasource",
 And then send it:
 
 ```elixir
-ElixirDruid.post_query(q, :default)
+Panoramix.post_query(q, :default)
 ```
 
 Where `:default` is a configuration profile pointing to your Druid server.
@@ -72,7 +72,7 @@ The default value for the profile argument is `:default`, so if you
 only need a single configuration you can omit it:
 
 ```elixir
-ElixirDruid.post_query(q)
+Panoramix.post_query(q)
 ```
 
 Response example:
@@ -108,7 +108,7 @@ Response example:
 You can check correctness of your configuration by requesting status from Druid Broker. A successfull response will look like this.
 
 ```elixir
-iex(1)> ElixirDruid.status(:default)
+iex(1)> Panoramix.status(:default)
 {:ok,
  %{
    "memory" => %{...},

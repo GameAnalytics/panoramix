@@ -1,15 +1,15 @@
-defmodule ElixirDruidTest do
+defmodule PanoramixTest do
   use ExUnit.Case
-  doctest ElixirDruid
-  use ElixirDruid
+  doctest Panoramix
+  use Panoramix
 
   test "builds a query" do
     query = from "my_datasource",
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       granularity: :day
-    assert is_binary(ElixirDruid.Query.to_json(query))
-    #IO.puts ElixirDruid.Query.to_json(query)
+    assert is_binary(Panoramix.Query.to_json(query))
+    #IO.puts Panoramix.Query.to_json(query)
   end
 
   test "builds a query with an aggregation" do
@@ -19,7 +19,7 @@ defmodule ElixirDruidTest do
       granularity: :day,
       aggregations: [event_count: count(),
                     unique_ids: hyperUnique(:user_unique)]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["aggregations"] == [%{"name" => "event_count",
@@ -37,7 +37,7 @@ defmodule ElixirDruidTest do
       granularity: :day,
       aggregations: [event_count: count(),
                     unique_ids: hyperUnique(:user_unique, round: true)]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["aggregations"] == [%{"name" => "event_count",
@@ -58,7 +58,7 @@ defmodule ElixirDruidTest do
         event_count: count(),
         interesting_event_count: count() when dimensions.interesting == "true"
       ]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["aggregations"] == [
@@ -85,7 +85,7 @@ defmodule ElixirDruidTest do
       aggregations: [
         interesting_event_count: count() when ^my_filter
       ]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     # In this case, there is no need to add a filter to the aggregator
@@ -103,7 +103,7 @@ defmodule ElixirDruidTest do
       granularity: :day
     query = query |>
       from(aggregations: [event_count: count()])
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["aggregations"] == [%{"name" => "event_count",
@@ -116,7 +116,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == dimensions["bar"]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "columnComparison",
@@ -128,7 +128,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar"
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "selector",
@@ -141,7 +141,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar" and dimensions.bar == dimensions.foo
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "and",
@@ -158,7 +158,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar" or dimensions.bar == dimensions.foo
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "or",
@@ -177,7 +177,7 @@ defmodule ElixirDruidTest do
       # 'and' has higher precedence, so this should get parsed as
       # (foo == "bar" or (bar == foo and baz == 17))
       filter: dimensions.foo == "bar" or dimensions.bar == dimensions.foo and dimensions.baz == 17
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "or",
@@ -199,7 +199,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: not (dimensions.foo == "bar")
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "not",
@@ -215,7 +215,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo in ["bar", x]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "in",
@@ -228,7 +228,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: 1 <= dimensions.foo <= 10
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "bound",
@@ -245,7 +245,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: "aaa" < dimensions.foo <= "bbb"
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "bound",
@@ -262,7 +262,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: expression("foo / 1000 < bar")
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "expression",
@@ -276,7 +276,7 @@ defmodule ElixirDruidTest do
       filter: dimensions.foo == "bar"
     query = from query,
       filter: dimensions.bar == "baz" and ^query.filter
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "and",
@@ -297,7 +297,7 @@ defmodule ElixirDruidTest do
     # means that the new filter just gets used as the query filter.
     query = from query,
       filter: dimensions.bar == "baz" and ^query.filter
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert decoded["filter"] == %{"type" => "selector",
@@ -336,7 +336,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
       filter: dimensions.foo == "bar"
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     %{"filter" => filter} = Jason.decode! json
     new_query = from "my_datasource",
       query_type: "timeseries",
@@ -344,7 +344,7 @@ defmodule ElixirDruidTest do
       filter: ^filter
     assert %{"filter" => %{"type" => "selector",
                            "dimension" => "foo",
-                           "value" => "bar"}} = Jason.decode! ElixirDruid.Query.to_json new_query
+                           "value" => "bar"}} = Jason.decode! Panoramix.Query.to_json new_query
   end
 
   test "build a topN query" do
@@ -354,7 +354,7 @@ defmodule ElixirDruidTest do
       dimension: "foo",
       metric: "size",
       threshold: 10
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "topN",
@@ -372,7 +372,7 @@ defmodule ElixirDruidTest do
                  priority: 100,
                  queryId: "my-unique-query-id",
                  skipEmptyBuckets: true}
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"timeout" => 0,
@@ -391,7 +391,7 @@ defmodule ElixirDruidTest do
       post_aggregations: [
         mean_events_per_user: aggregations.event_count / aggregations["unique_ids"]
       ]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert [%{"type" => "arithmetic",
@@ -415,7 +415,7 @@ defmodule ElixirDruidTest do
       post_aggregations: [
         mean_events_per_user_pct: aggregations.event_count / aggregations["unique_ids"] * 100
       ]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert [%{"type" => "arithmetic",
@@ -446,7 +446,7 @@ defmodule ElixirDruidTest do
         greatest: doubleGreatest(:event_count, :unique_ids),
         histogram: buckets(:histogram_data, bucketSize: 42, offset: 17)
       ]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert [%{"type" => "hyperUniqueCardinality",
@@ -470,7 +470,7 @@ defmodule ElixirDruidTest do
       to_include: :all,
       merge: true,
       analysis_types: [:cardinality, :minmax]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "segmentMetadata",
@@ -489,7 +489,7 @@ defmodule ElixirDruidTest do
       to_include: ["foo", "bar"],
       merge: true,
       analysis_types: [:cardinality, :minmax]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "segmentMetadata",
@@ -506,7 +506,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: [{~D[2018-05-29], ~D[2018-06-05]}],
       granularity: :day
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "timeseries",
@@ -523,7 +523,7 @@ defmodule ElixirDruidTest do
       query_type: "timeseries",
       intervals: [{from, to}],
       granularity: :day
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "timeseries",
@@ -537,7 +537,7 @@ defmodule ElixirDruidTest do
     query = from "my_datasource",
       query_type: "timeBoundary",
       bound: :maxTime
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "timeBoundary",
@@ -553,7 +553,7 @@ defmodule ElixirDruidTest do
       granularity: :day,
       virtual_columns: [plus_one: expression("foo + 1", :long)],
       aggregations: [plus_one_sum: longSum(:plus_one)]
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "timeseries",
@@ -580,7 +580,7 @@ defmodule ElixirDruidTest do
         "2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00",
         {~D[2018-06-05], ~D[2018-06-12]},
         {Timex.to_datetime({{2018, 6, 12}, {1, 30, 0}}), Timex.to_datetime({{2018, 6, 19}, {18, 0, 0}})}])
-    json = ElixirDruid.Query.to_json(query)
+    json = Panoramix.Query.to_json(query)
     assert is_binary(json)
     decoded = Jason.decode! json
     assert %{"queryType" => "timeseries",

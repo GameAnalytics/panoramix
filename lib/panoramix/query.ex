@@ -1,4 +1,4 @@
-defmodule ElixirDruid.Query do
+defmodule Panoramix.Query do
   @moduledoc """
   Provides functions for building Druid query requests.
   """
@@ -9,7 +9,7 @@ defmodule ElixirDruid.Query do
              bound: nil, virtual_columns: nil, limit: nil, search_dimensions: nil,
              query: nil, sort: nil]
 
-  # A query has type ElixirDruid.query.t()
+  # A query has type Panoramix.query.t()
   @type t :: %__MODULE__{}
 
   @doc """
@@ -19,8 +19,8 @@ defmodule ElixirDruid.Query do
   ## Examples
 
     ```elixir
-      iex(1)> use ElixirDruid
-      ElixirDruid.Query
+      iex(1)> use Panoramix
+      Panoramix.Query
       iex(2)> q = from "my_datasource",
       ...(2)>       query_type: "timeseries",
       ...(2)>       intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
@@ -28,7 +28,7 @@ defmodule ElixirDruid.Query do
       ...(2)>       filter: dimensions.foo == "bar",
       ...(2)>        aggregations: [event_count: count(),
       ...(2)>                       unique_id_count: hyperUnique(:user_unique)]
-      %ElixirDruid.Query{
+      %Panoramix.Query{
       aggregations: [
         %{name: :event_count, type: "count"},
         %{fieldName: :user_unique, name: :unique_id_count, type: :hyperUnique}
@@ -71,14 +71,14 @@ defmodule ElixirDruid.Query do
             # tell Druid to cancel the query if it takes too long.
             # We're going to close the HTTP connection on our end, so
             # there is no point in Druid keeping processing.
-            timeout = Application.get_env(:elixir_druid, :request_timeout, 120_000)
+            timeout = Application.get_env(:panoramix, :request_timeout, 120_000)
             # Also set the configured priority.  0 is what Druid picks if you
             # don't specify a priority, so that seems to be a sensible default.
-            priority = Application.get_env(:elixir_druid, :query_priority, 0)
-            %ElixirDruid.Query{
+            priority = Application.get_env(:panoramix, :query_priority, 0)
+            %Panoramix.Query{
               data_source: datasource,
               context: %{timeout: timeout, priority: priority}}
-          %ElixirDruid.Query{} ->
+          %Panoramix.Query{} ->
             # Or are we extending an existing query?
             source
         end
@@ -145,7 +145,7 @@ defmodule ElixirDruid.Query do
           # Already a string - pass it on unchanged
           interval_string
         {from, to} ->
-          ElixirDruid.format_time!(from) <> "/" <> ElixirDruid.format_time!(to)
+          Panoramix.format_time!(from) <> "/" <> Panoramix.format_time!(to)
       end
     end
   end

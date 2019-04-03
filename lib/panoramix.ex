@@ -1,21 +1,21 @@
-defmodule ElixirDruid.Error do
+defmodule Panoramix.Error do
   defexception [:message]
   @type t :: %__MODULE__{}
 end
 
-defmodule ElixirDruid do
+defmodule Panoramix do
 
   @moduledoc """
   Post a query to Druid Broker or request its status.
 
-  Use ElixirDruid.Query to build a query.
+  Use Panoramix.Query to build a query.
 
   ## Examples
 
   Build a query like this:
 
   ```elixir
-  use ElixirDruid
+  use Panoramix
 
   q = from "my_datasource",
         query_type: "timeseries",
@@ -29,7 +29,7 @@ defmodule ElixirDruid do
   And then send it:
 
   ```elixir
-  ElixirDruid.post_query(q, :default)
+  Panoramix.post_query(q, :default)
   ```
 
   Where `:default` is a configuration profile pointing to your Druid server.
@@ -38,7 +38,7 @@ defmodule ElixirDruid do
   only need a single configuration you can omit it:
 
   ```elixir
-  ElixirDruid.post_query(q)
+  Panoramix.post_query(q)
   ```
 
   Response example:
@@ -71,23 +71,23 @@ defmodule ElixirDruid do
 
   To request status from Broker run
   ```elixir
-  ElixirDruid.status(:default)
+  Panoramix.status(:default)
   ```
 
   """
   @moduledoc since: "1.0.0"
 
-  @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
-  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
+  @spec post_query(%Panoramix.Query{}, atom()) :: {:ok, term()} |
+  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def post_query(query, profile \\ :default) do
     url_path = "/druid/v2"
-    body = ElixirDruid.Query.to_json query
+    body = Panoramix.Query.to_json query
     headers = [{"Content-Type", "application/json"}]
 
     request_and_decode(profile, :post, url_path, body, headers)
   end
 
-  @spec post_query!(%ElixirDruid.Query{}, atom()) :: term()
+  @spec post_query!(%Panoramix.Query{}, atom()) :: term()
   def post_query!(query, profile \\ :default) do
     case post_query(query, profile) do
       {:ok, response} -> response
@@ -96,7 +96,7 @@ defmodule ElixirDruid do
   end
 
   @spec status(atom) :: {:ok, term()} |
-  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
+  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def status(profile \\ :default) do
     url_path = "/status"
     body = ""
@@ -114,7 +114,7 @@ defmodule ElixirDruid do
   end
 
   defp request_and_decode(profile, method, url_path, body, headers) do
-    broker_profiles = Application.get_env(:elixir_druid, :broker_profiles)
+    broker_profiles = Application.get_env(:panoramix, :broker_profiles)
     broker_profile = broker_profiles[profile] ||
       raise ArgumentError, "no broker profile with name #{profile}"
     url = broker_profile[:base_url] <> url_path
@@ -153,7 +153,7 @@ defmodule ElixirDruid do
 
   defp timeout_options() do
     # Default to 120 seconds
-    request_timeout = Application.get_env(:elixir_druid, :request_timeout, 120_000)
+    request_timeout = Application.get_env(:panoramix, :request_timeout, 120_000)
     [recv_timeout: request_timeout]
   end
 
@@ -178,7 +178,7 @@ defmodule ElixirDruid do
         _ ->
           "undecodable error: " <> body
       end
-    {:error, %ElixirDruid.Error{message: message}}
+    {:error, %Panoramix.Error{message: message}}
   end
 
   @doc ~S"""
@@ -186,9 +186,9 @@ defmodule ElixirDruid do
 
   ## Examples
 
-      iex> ElixirDruid.format_time! ~D[2018-07-20]
+      iex> Panoramix.format_time! ~D[2018-07-20]
       "2018-07-20"
-      iex> ElixirDruid.format_time!(
+      iex> Panoramix.format_time!(
       ...>   Timex.to_datetime({{2018,07,20},{1,2,3}}))
       "2018-07-20T01:02:03+00:00"
   """
@@ -201,7 +201,7 @@ defmodule ElixirDruid do
 
   defmacro __using__(_params) do
     quote do
-      import ElixirDruid.Query, only: [from: 2]
+      import Panoramix.Query, only: [from: 2]
     end
   end
 
