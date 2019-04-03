@@ -34,9 +34,9 @@ config :elixir_druid,
   query_priority: 0,
   broker_profiles: [
     default: [
-      base_url: "http://localhost:9088",
-      cacertfile: "ca.crt",
-      http_username: "username",
-      http_password: "secret"
+      base_url:       "https://druid-broker-host:9088",
+      cacertfile:     "path/to/druid-certificate.crt",
+      http_username:  "username",
+      http_password:  "password"
     ]
   ]

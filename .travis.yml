@@ -7,6 +7,7 @@ script:
     - mix dialyzer --halt-exit-status
     - mix xref unreachable
     - mix credo --ignore todo
+    - mix docs
 
 # We want to cache Dialyzer PLTs, in order not to have to rebuild them
 # every time. Dialyzer will automatically rebuild them when needed.

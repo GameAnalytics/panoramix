@@ -6,8 +6,76 @@ end
 defmodule ElixirDruid do
 
   @moduledoc """
-  Documentation for ElixirDruid.
+  Post a query to Druid Broker or request its status.
+
+  Use ElixirDruid.Query to build a query.
+
+  ## Examples
+
+  Build a query like this:
+
+  ```elixir
+  use ElixirDruid
+
+  q = from "my_datasource",
+        query_type: "timeseries",
+        intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+        granularity: :day,
+        filter: dimensions.foo == "bar",
+         aggregations: [event_count: count(),
+                        unique_id_count: hyperUnique(:user_unique)]
+  ```
+
+  And then send it:
+
+  ```elixir
+  ElixirDruid.post_query(q, :default)
+  ```
+
+  Where `:default` is a configuration profile pointing to your Druid server.
+
+  The default value for the profile argument is `:default`, so if you
+  only need a single configuration you can omit it:
+
+  ```elixir
+  ElixirDruid.post_query(q)
+  ```
+
+  Response example:
+  ```elixir
+  {:ok,
+   [
+     %{
+       "result" => %{
+         "event_count" => 7544,
+         "unique_id_count" => 43.18210933535
+       },
+       "timestamp" => "2019-03-01T00:00:00.000Z"
+     },
+     %{
+       "result" => %{
+         "event_count" => 1051,
+         "unique_id_count" => 104.02052398847
+       },
+       "timestamp" => "2019-03-02T00:00:00.000Z"
+     },
+     %{
+       "result" => %{
+         "event_count" => 4591,
+         "unique_id_count" => 79.19885795313
+       },
+       "timestamp" => "2019-03-03T00:00:00.000Z"
+     }
+   ]}
+  ```
+
+  To request status from Broker run
+  ```elixir
+  ElixirDruid.status(:default)
+  ```
+
   """
+  @moduledoc since: "1.0.0"
 
   @spec post_query(%ElixirDruid.Query{}, atom()) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
@@ -29,7 +97,7 @@ defmodule ElixirDruid do
 
   @spec status(atom) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | ElixirDruid.Error.t()}
-  def status(profile) do
+  def status(profile \\ :default) do
     url_path = "/status"
     body = ""
     headers = []
@@ -38,7 +106,7 @@ defmodule ElixirDruid do
   end
 
   @spec status!(atom) :: term()
-  def status!(profile) do
+  def status!(profile \\ :default) do
     case status(profile) do
       {:ok, response} -> response
       {:error, error} -> raise error

@@ -12,6 +12,53 @@ defmodule ElixirDruid.Query do
   # A query has type ElixirDruid.query.t()
   @type t :: %__MODULE__{}
 
+  @doc """
+  Use `from` macro to build Druid queries. See [Druid documentation](http://druid.io/docs/latest/querying/querying.html) to learn about
+  available fields and general query object structure.
+
+  ## Examples
+
+    ```elixir
+      iex(1)> use ElixirDruid
+      ElixirDruid.Query
+      iex(2)> q = from "my_datasource",
+      ...(2)>       query_type: "timeseries",
+      ...(2)>       intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+      ...(2)>       granularity: :day,
+      ...(2)>       filter: dimensions.foo == "bar",
+      ...(2)>        aggregations: [event_count: count(),
+      ...(2)>                       unique_id_count: hyperUnique(:user_unique)]
+      %ElixirDruid.Query{
+      aggregations: [
+        %{name: :event_count, type: "count"},
+        %{fieldName: :user_unique, name: :unique_id_count, type: :hyperUnique}
+      ],
+      analysis_types: nil,
+      bound: nil,
+      context: %{priority: 0, timeout: 120000},
+      data_source: "my_datasource",
+      dimension: nil,
+      dimensions: nil,
+      filter: %{dimension: "foo", type: "selector", value: "bar"},
+      granularity: :day,
+      intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+      limit: nil,
+      limit_spec: nil,
+      merge: nil,
+      metric: nil,
+      post_aggregations: nil,
+      query: nil,
+      query_type: "timeseries",
+      search_dimensions: nil,
+      sort: nil,
+      threshold: nil,
+      to_include: nil,
+      virtual_columns: nil
+      }
+    ```
+
+  """
+  @doc since: "1.0.0"
   defmacro from(source, kw) do
     query_fields = List.foldl(kw, [], &build_query/2)
     quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
