@@ -1,23 +1,23 @@
-defmodule ElixirDruid.MixProject do
+defmodule Panoramix.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :elixir_druid,
+      app: :panoramix,
       version: System.cmd("git", ["describe", "--tags"]) |> elem(0) |> String.trim_trailing |> String.trim_leading("v"),
       elixir: "~> 1.8.1",
       start_permanent: Mix.env() == :prod,
       description: "Client library for sending requests to Druid.",
-      source_url: "https://github.com/gameanalytics/elixir_druid",
+      source_url: "https://github.com/GameAnalytics/panoramix",
       package: package(),
       deps: deps(),
 
       # Docs
-      name: "ElixirDruid",
-      source_url: "https://github.com/GameAnalytics/elixir_druid",
-      homepage_url: "https://github.com/GameAnalytics/elixir_druid",
+      name: "Panoramix",
+      source_url: "https://github.com/GameAnalytics/panoramix",
+      homepage_url: "https://github.com/GameAnalytics/panoramix",
       docs: [
-        main: "ElixirDruid", # The main page in the docs
+        main: "Panoramix", # The main page in the docs
         extras: ["README.md"]
       ]
     ]
@@ -28,7 +28,7 @@ defmodule ElixirDruid.MixProject do
       files: ["config", "lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Magnus Henoch"],
       licenses: ["Apache-2.0"],
-      links: %{github: "https://github.com/gameanalytics/elixir_druid"}
+      links: %{github: "https://github.com/GameAnalytics/panoramix"}
     ]
   end
 

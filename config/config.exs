@@ -10,11 +10,11 @@ use Mix.Config
 
 # You can configure your application as:
 #
-#     config :elixir_druid, key: :value
+#     config :panoramix, key: :value
 #
 # and access this configuration in your application as:
 #
-#     Application.get_env(:elixir_druid, :key)
+#     Application.get_env(:panoramix, :key)
 #
 # You can also configure a 3rd-party app:
 #
@@ -29,7 +29,7 @@ use Mix.Config
 #
 #     import_config "#{Mix.env}.exs"
 
-config :elixir_druid,
+config :panoramix,
   request_timeout: 120_000,
   query_priority: 0,
   broker_profiles: [
