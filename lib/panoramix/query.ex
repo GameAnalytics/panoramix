@@ -293,6 +293,13 @@ defmodule Panoramix.Query do
         {filter, nil} ->
           # Likewise
           filter
+        # If either or both filter is an AND already, merge them together
+        {%{type: "and", fields: filter_a_fields}, %{type: "and", fields: filter_b_fields}} ->
+          %{type: "and", fields: filter_a_fields ++ filter_b_fields}
+        {%{type: "and", fields: filter_a_fields}, filter_b_unquoted} ->
+          %{type: "and", fields: filter_a_fields ++ [filter_b_unquoted]}
+        {filter_a_unquoted, %{type: "and", fields: filter_b_fields}} ->
+          %{type: "and", fields: [filter_a_unquoted] ++ filter_b_fields}
         {filter_a_unquoted, filter_b_unquoted} ->
           %{type: "and", fields: [filter_a_unquoted, filter_b_unquoted]}
       end

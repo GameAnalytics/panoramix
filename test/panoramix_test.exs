@@ -153,6 +153,28 @@ defmodule PanoramixTest do
                                        "dimensions" => ["bar", "foo"]}]}
   end
 
+  test "build query with three filters ANDed together" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo == "bar" and dimensions.bar == dimensions.foo and 0 < dimensions.baz < 10
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "and",
+                                  "fields" =>
+                                    [%{"type" => "selector",
+                                       "dimension" => "foo",
+                                       "value" => "bar"},
+                                     %{"type" => "columnComparison",
+                                       "dimensions" => ["bar", "foo"]},
+                                     %{"type" => "bound",
+                                       "dimension" => "baz",
+                                       "ordering" => "numeric",
+                                       "lower" => "0", "lowerStrict" => true,
+                                       "upper" => "10", "upperStrict" => true}]}
+  end
+
   test "build query with two filters ORed together" do
     query = from "my_datasource",
       query_type: "timeseries",
