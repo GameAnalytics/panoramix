@@ -323,13 +323,15 @@ defmodule Panoramix.Query do
   end
   defp build_filter({:not, _, [a]}) do
     filter = build_filter(a)
-    quote generated: true, bind_quoted: [filter: filter] do
+    quote generated: true do
       # It's not meaningful to use 'not' with the empty filter,
       # since "not everything" would allow "nothing".
-      unless filter do
-        raise "operand to 'not' must not be nil"
+      case unquote(filter) do
+        nil ->
+          raise "operand to 'not' must not be nil"
+        filter_unquoted ->
+          %{type: "not", field: filter_unquoted}
       end
-      %{type: "not", field: filter}
     end
   end
   # Let's handle the 'in' operator.  First, let's handle
