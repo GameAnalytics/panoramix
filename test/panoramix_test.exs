@@ -400,7 +400,41 @@ defmodule PanoramixTest do
     assert %{"timeout" => 0,
              "priority" => 100,
              "queryId" => "my-unique-query-id",
-             "skipEmptyBuckets" => true} = decoded["context"]
+             "skipEmptyBuckets" => true} == decoded["context"]
+  end
+
+  test "build a query with a query context while supplying default values from app config" do
+    query = from "my_datasource",
+                 query_type: "timeseries",
+                 intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+                 granularity: :day,
+                 context: %{queryId: "my-unique-query-id",
+                            skipEmptyBuckets: true}
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert %{"timeout" => 120_000,
+             "priority" => 0,
+             "queryId" => "my-unique-query-id",
+             "skipEmptyBuckets" => true} == decoded["context"]
+  end
+
+  test "add query context to an existing query and maintain defaults from app config" do
+    query = from "my_datasource",
+                 query_type: "timeseries",
+                 intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+                 granularity: :day,
+                 context: %{queryId: "my-unique-query-id",
+                            skipEmptyBuckets: true}
+    query = from query,
+                 context: %{queryId: "another-unique-query-id",
+                            skipEmptyBuckets: false}
+    json = Panoramix.Query.to_json(query)
+    decoded = Jason.decode! json
+    assert %{"timeout" => 120_000,
+             "priority" => 0,
+             "queryId" => "another-unique-query-id",
+             "skipEmptyBuckets" => false} == decoded["context"]
   end
 
   test "build a query with an arithmetic post-aggregation" do

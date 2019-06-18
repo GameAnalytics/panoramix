@@ -60,24 +60,16 @@ defmodule Panoramix.Query do
   """
   @doc since: "1.0.0"
   defmacro from(source, kw) do
-    query_fields = List.foldl(kw, [], &build_query/2)
+    # Supply default "context" parameters (timeout, priority) so that
+    # we always have some to work with. If these have already been supplied
+    # in kw then defaults will be overwritten.
+    query_fields = [context: default_context()] ++ List.foldl(kw, [], &build_query/2)
     quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
       query =
         case source do
           datasource when is_binary(datasource) ->
             # Are we creating a new query from scratch, given a datasource?
-            #
-            # Let's add a timeout in the query "context", as we need to
-            # tell Druid to cancel the query if it takes too long.
-            # We're going to close the HTTP connection on our end, so
-            # there is no point in Druid keeping processing.
-            timeout = Application.get_env(:panoramix, :request_timeout, 120_000)
-            # Also set the configured priority.  0 is what Druid picks if you
-            # don't specify a priority, so that seems to be a sensible default.
-            priority = Application.get_env(:panoramix, :query_priority, 0)
-            %Panoramix.Query{
-              data_source: datasource,
-              context: %{timeout: timeout, priority: priority}}
+            %Panoramix.Query{data_source: datasource}
           %Panoramix.Query{} ->
             # Or are we extending an existing query?
             source
@@ -86,9 +78,23 @@ defmodule Panoramix.Query do
     end
   end
 
+  defp default_context() do
+    quote generated: true do
+      # Let's add a timeout in the query "context", as we need to
+      # tell Druid to cancel the query if it takes too long.
+      # We're going to close the HTTP connection on our end, so
+      # there is no point in Druid keeping processing.
+      timeout = Application.get_env(:panoramix, :request_timeout, 120_000)
+      # Also set the configured priority.  0 is what Druid picks if you
+      # don't specify a priority, so that seems to be a sensible default.
+      priority = Application.get_env(:panoramix, :query_priority, 0)
+      %{timeout: timeout, priority: priority}
+    end
+  end
+
   defp build_query({field, value}, query_fields)
   when field in [:granularity, :dimension, :dimensions, :metric, :query_type,
-                 :threshold, :context, :merge, :analysis_types, :limit_spec,
+                 :threshold, :merge, :analysis_types, :limit_spec,
                  :limit, :search_dimensions, :query, :sort] do
     # For these fields, we just include the value verbatim.
     [{field, value}] ++ query_fields
@@ -131,6 +137,9 @@ defmodule Panoramix.Query do
   end
   defp build_query({:virtual_columns, virtual_columns}, query_fields) do
     [virtual_columns: build_virtual_columns(virtual_columns)] ++ query_fields
+  end
+  defp build_query({:context, context}, query_fields) do
+    [context: build_context(context)] ++ query_fields
   end
   defp build_query({unknown, _}, _query_fields) do
     raise ArgumentError, "Unknown query field #{inspect unknown}"
@@ -463,6 +472,12 @@ defmodule Panoramix.Query do
   defp build_virtual_column({_name, {:expression, _, args}}) do
     raise ArgumentError, "Expected 2 arguments to 'expression' in virtual column, expression and output type; " <>
       "got #{length args}"
+  end
+
+  defp build_context(context) do
+    quote generated: true, bind_quoted: [context: context, default_context: default_context()] do
+      Map.merge(default_context, context)
+    end
   end
 
   def to_json(query) do
