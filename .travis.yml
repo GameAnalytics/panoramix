@@ -19,3 +19,11 @@ before_cache:
 cache:
   directories:
   - _build/dev
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  skip_cleanup: true
+  script:
+    - mix hex.publish --yes
+  on:
+    tags: true
