@@ -24,7 +24,7 @@ deploy:
   api_key: $GITHUB_TOKEN
   skip_cleanup: true
   script:
-    - sed -i "s/version: .*/version: \"$(git describe --tags)\",/g" mix.exs
+    - "sed -i 's/version: .*/version: "'"$(git describe --tags)"'",/g' mix.exs"
     - mix hex.publish --yes
   on:
     tags: true
