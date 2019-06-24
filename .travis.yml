@@ -22,6 +22,6 @@ cache:
 deploy:
     provider: script
     skip_cleanup: true
-    script: "sed -i \"s|version: .*|version: \"$(git describe --tags)\",|g\" mix.exs && mix hex.publish --yes"
+    script: bash publish.sh
     on:
         tags: true
