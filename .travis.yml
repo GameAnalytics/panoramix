@@ -20,11 +20,8 @@ cache:
     directories:
         - _build/dev
 deploy:
-    provider: releases
-    api_key: $GITHUB_TOKEN
+    provider: script
     skip_cleanup: true
-    script:
-        - "sed -i \"s|version: .*|version: \"$(git describe --tags)\",|g\" mix.exs"
-        - mix hex.publish --yes
+    script: "sed -i \"s|version: .*|version: \"$(git describe --tags)\",|g\" mix.exs && mix hex.publish --yes"
     on:
         tags: true
