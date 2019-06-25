@@ -15,16 +15,13 @@ script:
 # directory at a time, we need to remove _build/dev/{lib,rel} before
 # caching.
 before_cache:
-  - rm -rf _build/dev/lib _build/dev/rel
+    - rm -rf _build/dev/lib _build/dev/rel
 cache:
-  directories:
-  - _build/dev
+    directories:
+        - _build/dev
 deploy:
-  provider: releases
-  api_key: $GITHUB_TOKEN
-  skip_cleanup: true
-  script:
-    - sed -i "s/version: .*/version: \"$(git describe --tags)\",/g" mix.exs
-    - mix hex.publish --yes
-  on:
-    tags: true
+    provider: script
+    skip_cleanup: true
+    script: bash publish.sh
+    on:
+        tags: true
