@@ -1,5 +1,5 @@
 defmodule Panoramix.Error do
-  defexception [:message]
+  defexception [:message, :code]
   @type t :: %__MODULE__{}
 end
 
@@ -178,7 +178,7 @@ defmodule Panoramix do
         _ ->
           "undecodable error: " <> body
       end
-    {:error, %Panoramix.Error{message: message}}
+    {:error, %Panoramix.Error{message: message, code: status_code}}
   end
 
   @doc ~S"""
