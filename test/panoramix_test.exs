@@ -651,4 +651,80 @@ defmodule PanoramixTest do
                              "2018-06-12T01:30:00+00:00/2018-06-19T18:00:00+00:00"]},
              "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
+
+  test "build a query filtering on a lookup" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+      granularity: :day,
+      filter: dimensions.foo |> lookup(:foo_to_bar) == "expected_bar"
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "granularity" => "day",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+             "filter" => %{"type" => "selector",
+                           "dimension" => "foo",
+                           "value" => "expected_bar",
+                           "extractionFn" => %{"type" => "registeredLookup",
+                                               "lookup" => "foo_to_bar"}},
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
+  end
+
+  test "use lookup in column comparison filter" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+      granularity: :day,
+      filter: dimensions["foo"] |> lookup(:foo_to_bar, replaceMissingValueWith: "missing") == dimensions.baz
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "granularity" => "day",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+             "filter" => %{"type" => "columnComparison",
+                           "dimensions" => [
+                             %{"dimension" => "foo",
+                               "extractionFn" => %{"lookup" => "foo_to_bar",
+                                                   "type" => "registeredLookup",
+                                                   "replaceMissingValueWith" => "missing"},
+                               "type" => "extraction"},
+                             "baz"]},
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
+  end
+
+  test "chain two lookups in filter" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+      granularity: :day,
+      filter: dimensions.foo
+      |> lookup(:foo_to_bar)
+      |> lookup(:bar_to_baz, retainMissingValue: true, injective: true) == "expected_baz"
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+    assert %{"queryType" => "timeseries",
+             "dataSource" => "my_datasource",
+             "granularity" => "day",
+             "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-20T00:00:00+00:00"],
+             "filter" => %{"type" => "selector",
+                           "dimension" => "foo",
+                           "value" => "expected_baz",
+                           "extractionFn" => %{
+                             "type" => "cascade",
+                             "extractionFns" => [
+                               %{"type" => "registeredLookup",
+                                 "lookup" => "foo_to_bar"},
+                               %{"type" => "registeredLookup",
+                                 "lookup" => "bar_to_baz",
+                                 "retainMissingValue" => true,
+                                 "injective" => true}]}},
+             "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
+  end
+
 end
