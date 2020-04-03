@@ -271,21 +271,26 @@ defmodule Panoramix.Query do
   end
 
   defp build_filter({:==, _, [a, b]}) do
-    dimension_a = maybe_build_dimension(a)
-    dimension_b = maybe_build_dimension(b)
+    dimension_a = dimension_or_extraction_fn(a)
+    dimension_b = dimension_or_extraction_fn(b)
     case {dimension_a, dimension_b} do
       {nil, _} ->
         raise "left operand of == must be a dimension"
       {_, nil} ->
         # Compare a dimension to a value
-        quote do: %{type: "selector",
-                    dimension: unquote(dimension_a),
-                    value: unquote(b)}
+        {:%{}, [], [
+            type: "selector",
+            value: b] ++
+          # dimension_a is either just a dimension, or a dimension
+          # plus an extraction function
+          Map.to_list(dimension_a)}
       {_, _} ->
         # Compare two dimensions
+        dimension_spec_a = to_dimension_spec(dimension_a)
+        dimension_spec_b = to_dimension_spec(dimension_b)
         quote do: %{type: "columnComparison",
-                    dimensions: [unquote(dimension_a),
-                    unquote(dimension_b)]}
+                    dimensions: [unquote(dimension_spec_a),
+                                 unquote(dimension_spec_b)]}
     end
   end
   defp build_filter({:and, _, [a, b]}) do
@@ -348,27 +353,28 @@ defmodule Panoramix.Query do
   # (where 'foo' will usually be '__time', a special dimension for
   # the event timestamp)
   defp build_filter({:in, _, [a, {:intervals, _, [intervals]}]}) do
-    dimension = maybe_build_dimension(a)
+    dimension = dimension_or_extraction_fn(a)
     unless dimension do
       raise "left operand of 'in' must be a dimension"
     end
-    quote generated: true, bind_quoted: [
-      dimension: dimension,
-      intervals: build_intervals(intervals)
-    ] do
-      %{type: "interval",
-        dimension: dimension,
-        intervals: intervals}
-    end
+    {:%{}, [], [
+        type: "interval",
+        intervals: build_intervals(intervals)] ++
+      # allow extraction function
+      Map.to_list(dimension)}
   end
   # Now handle
   # dimensions.foo in ["123", "456"]
   defp build_filter({:in, _, [a, values]}) do
-    dimension = maybe_build_dimension(a)
+    dimension = dimension_or_extraction_fn(a)
     unless dimension do
       raise "left operand of 'in' must be a dimension"
     end
-    quote do: %{type: "in", dimension: unquote(dimension), values: unquote(values)}
+    {:%{}, [], [
+        type: "in",
+        values: values] ++
+      # allow extraction function
+      Map.to_list(dimension)}
   end
   defp build_filter({lt1, _, [{lt2, _, [a, b]}, c]})
     when lt1 in [:<, :<=] and lt2 in [:<, :<=] do
@@ -381,10 +387,13 @@ defmodule Panoramix.Query do
     # source code.
     lower_strict = (lt2 == :<)
     upper_strict = (lt1 == :<)
-    dimension = maybe_build_dimension(b)
+    dimension = dimension_or_extraction_fn(b)
     unless dimension do
       raise "middle operand in bound filter must be a dimension"
     end
+    base = {:%{}, [], [type: "bound", lowerStrict: lower_strict, upperStrict: upper_strict] ++
+      # allow extraction function
+      Map.to_list(dimension)}
     # Need 'generated: true' here to avoid compiler warnings for
     # our case expression in case a and c are literal constants.
     quote generated: true do
@@ -393,21 +402,18 @@ defmodule Panoramix.Query do
       # when both are strings, and crash otherwise.
       # TODO: do we need "alphanumeric" and "strlen"?
       {lower, upper, ordering} =
-    case {unquote(a), unquote(c)} do
-      {l, u} when is_integer(l) and is_integer(u) ->
-        {Integer.to_string(l), Integer.to_string(u), "numeric"}
-      {l, u} when is_float(l) and is_float(u) ->
-        {Float.to_string(l), Float.to_string(u), "numeric"}
-      {l, u} when is_binary(l) and is_binary(u) ->
-        {l, u, "lexicographic"}
-    end
-      %{type: "bound",
-        dimension: unquote(dimension),
-        lower: lower,
-        upper: upper,
-        lowerStrict: unquote(lower_strict),
-        upperStrict: unquote(upper_strict),
-        ordering: ordering}
+        case {unquote(a), unquote(c)} do
+          {l, u} when is_integer(l) and is_integer(u) ->
+            {Integer.to_string(l), Integer.to_string(u), "numeric"}
+          {l, u} when is_float(l) and is_float(u) ->
+            {Float.to_string(l), Float.to_string(u), "numeric"}
+          {l, u} when is_binary(l) and is_binary(u) ->
+            {l, u, "lexicographic"}
+        end
+      Map.merge(unquote(base),
+        %{lower: lower,
+          upper: upper,
+          ordering: ordering})
     end
   end
   defp build_filter({:expression, _, [expression]}) do
@@ -436,17 +442,56 @@ defmodule Panoramix.Query do
     end
   end
 
-  # TODO: handle dimension specs + extraction functions, not just "plain" dimensions
-  defp maybe_build_dimension({{:., _, [{:dimensions, _, _}, dimension]}, _, _}) do
+  # TODO: handle more extraction functions
+  defp dimension_or_extraction_fn({{:., _, [{:dimensions, _, _}, dimension]}, _, _}) do
     # dimensions.foo
-    Atom.to_string dimension
+    %{dimension: Atom.to_string(dimension)}
   end
-  defp maybe_build_dimension({{:., _, [Access, :get]}, _, [{:dimensions, _, _}, dimension]}) do
+  defp dimension_or_extraction_fn({{:., _, [Access, :get]}, _, [{:dimensions, _, _}, dimension]}) do
     # dimensions["foo"]
-    dimension
+    %{dimension: dimension}
   end
-  defp maybe_build_dimension(_) do
+  defp dimension_or_extraction_fn({:lookup, _, args}) do
+    case args do
+      [lookup_name | maybe_opts] ->
+        opts = case maybe_opts do
+                 [] -> []
+                 [opts] -> opts
+               end
+        %{extractionFn: {:%{}, [],
+                         [{"type", "registeredLookup"},
+                          {"lookup", lookup_name}] ++ opts}}
+      _ ->
+        raise ArgumentError, "Expected lookup name as argument to lookup"
+    end
+  end
+  defp dimension_or_extraction_fn({:|>, _, [left, right]}) do
+    left = dimension_or_extraction_fn(left)
+    right = dimension_or_extraction_fn(right)
+    case {left, right} do
+      {%{dimension: dimension, extractionFn: left_extraction_fn}, %{extractionFn: right_extraction_fn}} ->
+        # There are extraction functions on both sides of the operator
+        # - let's combine them into a cascade extraction function.
+        %{dimension: dimension,
+          extractionFn: {:%{}, [],
+                         [{"type", "cascade"},
+                          {"extractionFns", [left_extraction_fn, right_extraction_fn]}]}}
+      {%{dimension: dimension}, %{extractionFn: extraction_fn}} ->
+        %{dimension: dimension, extractionFn: extraction_fn}
+    end
+  end
+  defp dimension_or_extraction_fn(_) do
     nil
+  end
+
+  defp to_dimension_spec(%{dimension: dimension, extractionFn: extraction_fn}) do
+    # Do we need to set outputName here?
+    {:%{}, [], [type: "extraction",
+                dimension: dimension,
+                extractionFn: extraction_fn]}
+  end
+  defp to_dimension_spec(%{dimension: dimension}) do
+    dimension
   end
 
   defp build_virtual_columns(virtual_columns) do
