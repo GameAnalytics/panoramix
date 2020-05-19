@@ -11,12 +11,10 @@ An open-source client library for sending requests to [Apache Druid][druid] from
 
 Add Panoramix as a dependency to your project.
 
-[//]: # (TODO - Replace GitHub dep with Hex.pm below)
-
 ```elixir
 defp deps do
   [
-    {:panoramix, github: "GameAnalytics/panoramix"}
+    {:panoramix, ">= 0.12.0 and < 1.0.0"}
   ]
 end
 ```
