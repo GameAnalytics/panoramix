@@ -270,28 +270,12 @@ defmodule Panoramix.Query do
     end
   end
 
-  defp build_filter({:==, _, [a, b]}) do
-    dimension_a = dimension_or_extraction_fn(a)
-    dimension_b = dimension_or_extraction_fn(b)
-    case {dimension_a, dimension_b} do
-      {nil, _} ->
-        raise "left operand of == must be a dimension"
-      {_, nil} ->
-        # Compare a dimension to a value
-        {:%{}, [], [
-            type: "selector",
-            value: b] ++
-          # dimension_a is either just a dimension, or a dimension
-          # plus an extraction function
-          Map.to_list(dimension_a)}
-      {_, _} ->
-        # Compare two dimensions
-        dimension_spec_a = to_dimension_spec(dimension_a)
-        dimension_spec_b = to_dimension_spec(dimension_b)
-        quote do: %{type: "columnComparison",
-                    dimensions: [unquote(dimension_spec_a),
-                                 unquote(dimension_spec_b)]}
-    end
+  defp build_filter({:== = operator, _, [a, b]}) do
+    build_eq_filter(operator, a, b)
+  end
+  defp build_filter({:!= = operator, _, [a, b]}) do
+    eq_filter = build_eq_filter(operator, a, b)
+    {:%{}, [], [type: "not", field: eq_filter]}
   end
   defp build_filter({:and, _, [a, b]}) do
     filter_a = build_filter(a)
@@ -439,6 +423,30 @@ defmodule Panoramix.Query do
           # nil is a valid filter as well
           nil
       end
+    end
+  end
+
+  defp build_eq_filter(operator, a, b) do
+    dimension_a = dimension_or_extraction_fn(a)
+    dimension_b = dimension_or_extraction_fn(b)
+    case {dimension_a, dimension_b} do
+      {nil, _} ->
+        raise "left operand of #{operator} must be a dimension"
+      {_, nil} ->
+        # Compare a dimension to a value
+        {:%{}, [], [
+            type: "selector",
+            value: b] ++
+          # dimension_a is either just a dimension, or a dimension
+          # plus an extraction function
+          Map.to_list(dimension_a)}
+      {_, _} ->
+        # Compare two dimensions
+        dimension_spec_a = to_dimension_spec(dimension_a)
+        dimension_spec_b = to_dimension_spec(dimension_b)
+        quote do: %{type: "columnComparison",
+                    dimensions: [unquote(dimension_spec_a),
+                                 unquote(dimension_spec_b)]}
     end
   end
 

@@ -216,6 +216,59 @@ defmodule PanoramixTest do
                                            "value" => 17}]}]}
   end
 
+  test "build query with a not equal to filter" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo != "bar"
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "not",
+                                  "field" =>
+                                    %{"type" => "selector",
+                                      "dimension" => "foo",
+                                      "value" => "bar"}}
+  end
+
+  test "build query with a not equal to filter based on columnComparison" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      filter: dimensions.foo != dimensions.bar
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode! json
+    assert decoded["filter"] == %{"type" => "not",
+                                  "field" =>
+                                    %{"type" => "columnComparison",
+                                      "dimensions" => ["foo", "bar"]}}
+  end
+
+  test "equal filter can't have value on the left hand side" do
+    query = from "my_datasource",
+      query_type: "timeseries",
+      intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"]
+
+    assert_raise RuntimeError, "left operand of == must be a dimension", fn() ->
+      ast = quote do
+        use Panoramix
+        from unquote(query),
+          filter: "bar" == dimensions.foo
+      end
+      Code.eval_quoted(ast)
+    end
+
+    assert_raise RuntimeError, "left operand of != must be a dimension", fn() ->
+      ast = quote do
+        use Panoramix
+        from unquote(query),
+          filter: "bar" != dimensions.foo
+      end
+      Code.eval_quoted(ast)
+    end
+  end
+
   test "build query with a NOT filter" do
     query = from "my_datasource",
       query_type: "timeseries",
