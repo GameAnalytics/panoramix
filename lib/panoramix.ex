@@ -113,7 +113,7 @@ defmodule Panoramix do
     end
   end
 
-  defp request_and_decode(profile, method, url_path, body, headers) do
+  def request_and_decode(profile, method, url_path, body, headers) do
     broker_profiles = Application.get_env(:panoramix, :broker_profiles)
     broker_profile = broker_profiles[profile] ||
       raise ArgumentError, "no broker profile with name #{profile}"
