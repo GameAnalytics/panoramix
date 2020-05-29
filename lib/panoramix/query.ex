@@ -186,14 +186,16 @@ defmodule Panoramix.Query do
   end
   defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
     # e.g. hyperUnique(:user_unique)
-    quote do: %{type: unquote(aggregation_type),
+    normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
+    quote do: %{type: unquote(normalized_aggregation_type),
         name: unquote(name),
         fieldName: unquote(field_name)}
   end
   defp build_aggregation({name, {aggregation_type, _, [field_name, keywords]}}) do
     # e.g. hyperUnique(:user_unique, round: true)
+    normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
     quote generated: true, bind_quoted: [
-      aggregation_type: aggregation_type,
+      aggregation_type: normalized_aggregation_type,
       name: name,
       field_name: field_name,
       keywords: keywords]
@@ -269,6 +271,22 @@ defmodule Panoramix.Query do
         end
     end
   end
+
+  defp normalize_aggregation_type_name(:hllSketchBuild), do:
+    "HLLSketchBuild"
+  defp normalize_aggregation_type_name(:hllSketchMerge), do:
+    "HLLSketchMerge"
+  defp normalize_aggregation_type_name(:hllSketchEstimate), do:
+    "HLLSketchEstimate"
+  defp normalize_aggregation_type_name(:hllSketchEstimateWithBounds), do:
+    "HLLSketchEstimateWithBounds"
+  defp normalize_aggregation_type_name(:hllSketchUnion), do:
+    "HLLSketchUnion"
+  defp normalize_aggregation_type_name(:hllSketchToString), do:
+    "HLLSketchToString"
+  defp normalize_aggregation_type_name(name), do:
+    name
+
 
   defp build_filter({:== = operator, _, [a, b]}) do
     build_eq_filter(operator, a, b)
