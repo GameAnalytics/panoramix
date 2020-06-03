@@ -49,8 +49,6 @@ defmodule PanoramixTest do
     #IO.puts json
   end
 
-  # TODO
-  @tag :xxx
   test "builds a query with an aggregation type that needs a name normalization" do
     query = from "my_datasource",
       query_type: "timeseries",
