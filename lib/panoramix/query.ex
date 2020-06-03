@@ -16,7 +16,7 @@ defmodule Panoramix.Query do
   Use `from` macro to build Druid queries. See [Druid documentation](http://druid.io/docs/latest/querying/querying.html) to learn about
   available fields and general query object structure.
 
-  ## Examples
+  ## Example
 
     ```elixir
       iex(1)> use Panoramix
@@ -54,6 +54,37 @@ defmodule Panoramix.Query do
       threshold: nil,
       to_include: nil,
       virtual_columns: nil
+      }
+    ```
+
+  Some HLL aggregation names are capitalized and therefore won't play well with the macro. For such cases
+  use their aliases as a workaround:
+  `hllSketchBuild`, `hllSketchMerge`, `hllSketchEstimate`, `hllSketchUnion`, `hllSketchToString`.
+
+  The aggregation aliases will be replaced with original names when building a query.
+
+  ## Example
+
+    ```elixir
+      iex(1)> use Panoramix
+      Panoramix.Query
+      iex(2)> query = from "my_datasource",
+      ...(2)>       query_type: "timeseries",
+      ...(2)>       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      ...(2)>       granularity: :day,
+      ...(2)>       aggregations: [event_count: count(),
+      ...(2)>                     unique_ids: hllSketchMerge(:user_unique, round: true)]
+      %Panoramix.Query{
+        aggregations: [
+          %{name: :event_count, type: "count"},
+          %{
+            fieldName: :user_unique,
+            name: :unique_ids,
+            round: true,
+            type: "HLLSketchMerge"
+          }
+        ],
+        ...
       }
     ```
 
@@ -186,14 +217,16 @@ defmodule Panoramix.Query do
   end
   defp build_aggregation({name, {aggregation_type, _, [field_name]}}) do
     # e.g. hyperUnique(:user_unique)
-    quote do: %{type: unquote(aggregation_type),
+    normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
+    quote do: %{type: unquote(normalized_aggregation_type),
         name: unquote(name),
         fieldName: unquote(field_name)}
   end
   defp build_aggregation({name, {aggregation_type, _, [field_name, keywords]}}) do
     # e.g. hyperUnique(:user_unique, round: true)
+    normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
     quote generated: true, bind_quoted: [
-      aggregation_type: aggregation_type,
+      aggregation_type: normalized_aggregation_type,
       name: name,
       field_name: field_name,
       keywords: keywords]
@@ -205,6 +238,22 @@ defmodule Panoramix.Query do
         Map.new(keywords))
     end
   end
+
+  # Some capitalized aggregation names need normalizing. See docs for more info.
+  defp normalize_aggregation_type_name(:hllSketchBuild), do:
+    "HLLSketchBuild"
+  defp normalize_aggregation_type_name(:hllSketchMerge), do:
+    "HLLSketchMerge"
+  defp normalize_aggregation_type_name(:hllSketchEstimate), do:
+    "HLLSketchEstimate"
+  defp normalize_aggregation_type_name(:hllSketchEstimateWithBounds), do:
+    "HLLSketchEstimateWithBounds"
+  defp normalize_aggregation_type_name(:hllSketchUnion), do:
+    "HLLSketchUnion"
+  defp normalize_aggregation_type_name(:hllSketchToString), do:
+    "HLLSketchToString"
+  defp normalize_aggregation_type_name(name), do:
+    name
 
   defp build_post_aggregations(post_aggregations) do
     Enum.map post_aggregations,
