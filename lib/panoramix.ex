@@ -69,6 +69,13 @@ defmodule Panoramix do
    ]}
   ```
 
+  You can also build a JSON query yourself by passing it as a map to
+  `post_query`:
+
+  ```elixir
+  Panoramix.post_query(%{queryType: "timeBoundary", dataSource: "my_datasource"})
+  ```
+
   To request status from Broker run
   ```elixir
   Panoramix.status(:default)
@@ -77,17 +84,22 @@ defmodule Panoramix do
   """
   @moduledoc since: "1.0.0"
 
-  @spec post_query(%Panoramix.Query{}, atom()) :: {:ok, term()} |
+  @spec post_query(%Panoramix.Query{} | map(), atom()) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def post_query(query, profile \\ :default) do
     url_path = "/druid/v2"
-    body = Panoramix.Query.to_json query
+    body = case query do
+             %Panoramix.Query{} ->
+               Panoramix.Query.to_json(query)
+             _ ->
+               Jason.encode!(query)
+           end
     headers = [{"Content-Type", "application/json"}]
 
     request_and_decode(profile, :post, url_path, body, headers)
   end
 
-  @spec post_query!(%Panoramix.Query{}, atom()) :: term()
+  @spec post_query!(%Panoramix.Query{} | map(), atom()) :: term()
   def post_query!(query, profile \\ :default) do
     case post_query(query, profile) do
       {:ok, response} -> response

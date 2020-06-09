@@ -101,6 +101,13 @@ Response example:
  ]}
 ```
 
+You can also build a JSON query yourself by passing it as a map to
+`post_query`:
+
+```elixir
+Panoramix.post_query(%{queryType: "timeBoundary", dataSource: "my_datasource"})
+```
+
 ## Troubleshooting
 
 You can check correctness of your configuration by requesting status from Druid Broker. A successfull response will look like this.
