@@ -42,6 +42,8 @@ config :panoramix,
 
 [context-druid-doc-link]: http://druid.io/docs/latest/querying/query-context.html
 
+The `cacertfile` option in the broker profile names a file that contains the CA certificate for the Druid broker. Alternatively you can specify the certificate as a string in PEM format (starting with `-----BEGIN CERTIFICATE-----`) in the `cacert` option.
+
 ## Usage
 
 Build a query like this:
