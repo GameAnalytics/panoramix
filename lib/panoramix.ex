@@ -147,10 +147,27 @@ defmodule Panoramix do
 
   defp ssl_options(url, broker_profile) do
     if url =~ ~r(^https://) do
-      cacertfile = broker_profile[:cacertfile]
-      [ssl: [verify: :verify_peer, cacertfile: cacertfile, depth: 10]]
+      cacert_options = cacert_options(broker_profile)
+      [ssl: [verify: :verify_peer, depth: 10] ++ cacert_options]
     else
       []
+    end
+  end
+
+  defp cacert_options(broker_profile) do
+    cond do
+      cacertfile = broker_profile[:cacertfile] ->
+        # The CA certificate is in a file.
+        [cacertfile: cacertfile]
+      cacert = broker_profile[:cacert] ->
+        # The CA certificate is provided as a PEM-encoded string.
+        # Need to convert it to DER.
+        pem_entries = :public_key.pem_decode(cacert)
+        cacerts = for {:"Certificate", cert, :not_encrypted} <- pem_entries, do: cert
+        [cacerts: cacerts]
+      true ->
+        # No CA certificate specified.
+        []
     end
   end
 
