@@ -977,4 +977,49 @@ defmodule PanoramixTest do
       }
     ]
   end
+
+  test "nested query" do
+    inner_query = from "my_datasource",
+      query_type: "topN",
+      intervals: ["2020-11-01/P7D"],
+      granularity: :day,
+      aggregations: [event_count: count()],
+      dimension: "foo",
+      metric: "event_count",
+      threshold: 10
+    query = from %{type: :query, query: inner_query},
+      query_type: "timeseries",
+      intervals: ["2020-11-01/P7D"],
+      granularity: :day,
+      aggregations: [foo_count: count(), event_count: longSum(:event_count)],
+      post_aggregations: [
+        mean_events_per_foo: aggregations.event_count / aggregations.foo_count
+      ]
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+    assert %{"queryType" => "timeseries",
+             "dataSource" => %{
+               "type" => "query",
+               "query" => %{"aggregations" => [%{"name" => "event_count", "type" => "count"}],
+                            "context" => %{"priority" => 0, "timeout" => 120_000},
+                            "dataSource" => "my_datasource",
+                            "dimension" => "foo",
+                            "granularity" => "day",
+                            "intervals" => ["2020-11-01/P7D"],
+                            "metric" => "event_count",
+                            "queryType" => "topN",
+                            "threshold" => 10}},
+             "context" => %{"priority" => 0, "timeout" => 120_000},
+             "granularity" => "day",
+             "intervals" => ["2020-11-01/P7D"],
+             "aggregations" => [%{"name" => "foo_count", "type" => "count"},
+                                %{"fieldName" => "event_count", "name" => "event_count", "type" => "longSum"}],
+             "postAggregations" => [%{"name" => "mean_events_per_foo",
+                                      "fn" => "/",
+                                      "type" => "arithmetic",
+                                      "fields" => [%{"fieldName" => "event_count", "type" => "fieldAccess"},
+                                                   %{"fieldName" => "foo_count", "type" => "fieldAccess"}]}]} ==
+      decoded
+  end
 end

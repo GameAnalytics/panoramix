@@ -69,6 +69,30 @@ defmodule Panoramix do
    ]}
   ```
 
+  To make a nested query, pass a map of the form `%{type: :query, query: inner_query}`
+  as data source. For example:
+
+  ```elixir
+  use Panoramix
+
+  inner_query = from "my_datasource",
+                  query_type: "topN",
+                  intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+                  granularity: :day,
+                  aggregations: [event_count: count()],
+                  dimension: "foo",
+                  metric: "event_count",
+                  threshold: 100
+  q = from %{type: :query, query: inner_query},
+        query_type: "timeseries",
+        intervals: ["2019-03-01T00:00:00+00:00/2019-03-04T00:00:00+00:00"],
+        granularity: :day,
+        aggregations: [foo_count: count(),
+                       event_count_sum: longSum(:event_count)],
+        post_aggregations: [mean_events_per_foo: aggregations.event_count_sum / aggregations.foo_count]
+  ```
+
+
   You can also build a JSON query yourself by passing it as a map to
   `post_query`:
 
