@@ -295,28 +295,29 @@ defmodule Panoramix.Query do
         value: unquote(constant)}
     end
   end
+  defp build_post_aggregation({post_aggregator, _, [field | options]})
+  when post_aggregator in [:hllSketchToString, :hllSketchEstimateWithBounds, :hllSketchEstimate] do
+    field_ref = build_post_aggregation(field)
+    post_aggregation_field_accessor(post_aggregator, :field, field_ref, options)
+  end
+  defp build_post_aggregation({:hllSketchUnion, _, [fields | options]}) do
+    pa_list = for field <- fields, do: build_post_aggregation(field)
+    post_aggregation_field_accessor(:hllSketchUnion, :fields, pa_list, options)
+  end
   defp build_post_aggregation({post_aggregator, _, fields = [_|_]})
   when post_aggregator in [:doubleGreatest, :longGreatest, :doubleLeast, :longLeast] do
-    quote do
-      %{type: unquote(post_aggregator),
-        fields: unquote(fields)}
-    end
+    post_aggregation_field_accessor(post_aggregator, :fields, fields)
   end
-  defp build_post_aggregation({post_aggregator, _, [field_name | args]}) do
+  defp build_post_aggregation({post_aggregator, _, [field_name | options]}) do
     # This is for all post-aggregators that use a "fieldName" parameter,
     # and optionally a bunch of extra parameters.
-    base = quote generated: true, bind_quoted: [post_aggregator: post_aggregator, field_name: field_name] do
-      %{type: post_aggregator,
-        fieldName: field_name}
-    end
-    case args do
-      [] ->
-        base
-      [options] ->
-        quote generated: true, bind_quoted: [base: base, options: options] do
-          Map.merge(base, Map.new(options))
-        end
-    end
+    post_aggregation_field_accessor(post_aggregator, :fieldName, field_name, options)
+  end
+
+  def post_aggregation_field_accessor(type_name, accessor_name, accessor, options \\ []) do
+    type_name = normalize_aggregation_type_name(type_name)
+    options = List.first(options) || []
+    {:%{}, [], [{:type, type_name}, {accessor_name, accessor} | options]}
   end
 
   defp build_filter({:== = operator, _, [a, b]}) do

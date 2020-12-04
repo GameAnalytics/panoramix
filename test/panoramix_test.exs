@@ -799,4 +799,179 @@ defmodule PanoramixTest do
              "context" => %{"timeout" => 120_000, "priority" => 0}} == decoded
   end
 
+  test "builds a query with hllSketchEstimate post-aggregation" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day,
+        metric: %{type: "dimension"},
+        threshold: 10,
+        dimension: "foo",
+        aggregations: [
+          hyper_unique_agg: hyperUnique(:hyper_unique, round: true),
+          hll_sketch_agg: hllSketchMerge(:hll_sketch, round: true)
+        ],
+        post_aggregations: [
+          post_agg: aggregations.hyper_unique_agg / hllSketchEstimate(aggregations.hll_sketch_agg)
+        ]
+      )
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+
+    assert Jason.decode!(json) ==
+        %{
+          "aggregations" => [
+            %{
+              "fieldName" => "hyper_unique",
+              "name" => "hyper_unique_agg",
+              "round" => true,
+              "type" => "hyperUnique"
+            },
+            %{
+              "fieldName" => "hll_sketch",
+              "name" => "hll_sketch_agg",
+              "round" => true,
+              "type" => "HLLSketchMerge"
+            }
+          ],
+          "context" => %{"priority" => 0, "timeout" => 120_000},
+          "dataSource" => "my_datasource",
+          "dimension" => "foo",
+          "granularity" => "day",
+          "intervals" => ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+          "metric" => %{"type" => "dimension"},
+          "postAggregations" => [
+            %{
+              "fields" => [
+                %{"fieldName" => "hyper_unique_agg", "type" => "fieldAccess"},
+                %{
+                  "field" => %{"fieldName" => "hll_sketch_agg", "type" => "fieldAccess"},
+                  "type" => "HLLSketchEstimate"
+                }
+              ],
+              "fn" => "/",
+              "name" => "post_agg",
+              "type" => "arithmetic"
+            }
+          ],
+          "queryType" => "topN",
+          "threshold" => 10
+        }
+  end
+
+  test "builds a query with hllSketchEstimate with options" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day,
+        metric: %{type: "dimension"},
+        threshold: 10,
+        dimension: "foo",
+        aggregations: [
+          hyper_unique_agg: hyperUnique(:hyper_unique, round: true),
+          hll_sketch_agg: hllSketchMerge(:hll_sketch, round: true)
+        ],
+        post_aggregations: [
+          post_agg: aggregations.hyper_unique_agg / hllSketchEstimate(aggregations.hll_sketch_agg, round: true)
+        ]
+      )
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+
+    assert Jason.decode!(json)["postAggregations"] == [
+      %{
+        "fields" => [
+          %{"fieldName" => "hyper_unique_agg", "type" => "fieldAccess"},
+          %{
+            "field" => %{"fieldName" => "hll_sketch_agg", "type" => "fieldAccess"},
+            "round" => true,
+            "type" => "HLLSketchEstimate"
+          }
+        ],
+        "fn" => "/",
+        "name" => "post_agg",
+        "type" => "arithmetic"
+      }
+    ]
+  end
+
+  test "builds a query with hllSketchUnion" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day,
+        metric: %{type: "dimension"},
+        threshold: 10,
+        dimension: "foo",
+        aggregations: [
+          sketch_a: hllSketchMerge(:hll_sketch_a, round: true),
+          sketch_b: hllSketchMerge(:hll_sketch_b, round: true)
+        ],
+        post_aggregations: [
+          post_agg: hllSketchUnion([aggregations.sketch_a, aggregations.sketch_b])
+        ]
+      )
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+
+    assert Jason.decode!(json)["postAggregations"] == [
+      %{
+        "fields" => [
+          %{"fieldName" => "sketch_a", "type" => "fieldAccess"},
+          %{"fieldName" => "sketch_b", "type" => "fieldAccess"}
+        ],
+        "name" => "post_agg",
+        "type" => "HLLSketchUnion"
+      }
+    ]
+  end
+
+  test "builds a query with hllSketchUnion with options" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day,
+        metric: %{type: "dimension"},
+        threshold: 10,
+        dimension: "foo",
+        aggregations: [
+          sketch_a: hllSketchMerge(:hll_sketch_a, round: true),
+          sketch_b: hllSketchMerge(:hll_sketch_b, round: true)
+        ],
+        post_aggregations: [
+          post_agg: hllSketchEstimate(
+            hllSketchUnion(
+              [aggregations.sketch_a, aggregations.sketch_b],
+              lgK: 2, tgtHllType: "HLL_4"
+            )
+          )
+        ]
+      )
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+
+    assert Jason.decode!(json)["postAggregations"] == [
+      %{
+        "field" => %{
+          "fields" => [
+            %{"fieldName" => "sketch_a", "type" => "fieldAccess"},
+            %{"fieldName" => "sketch_b", "type" => "fieldAccess"}
+          ],
+          "lgK" => 2,
+          "tgtHllType" => "HLL_4",
+          "type" => "HLLSketchUnion"
+        },
+        "name" => "post_agg",
+        "type" => "HLLSketchEstimate"
+      }
+    ]
+  end
 end
