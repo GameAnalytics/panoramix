@@ -304,9 +304,10 @@ defmodule Panoramix.Query do
     pa_list = for field <- fields, do: build_post_aggregation(field)
     post_aggregation_field_accessor(:hllSketchUnion, :fields, pa_list, options)
   end
-  defp build_post_aggregation({post_aggregator, _, fields = [_|_]})
+  defp build_post_aggregation({post_aggregator, _, [fields]})
   when post_aggregator in [:doubleGreatest, :longGreatest, :doubleLeast, :longLeast] do
-    post_aggregation_field_accessor(post_aggregator, :fields, fields)
+    pa_list = for field <- fields, do: build_post_aggregation(field)
+    post_aggregation_field_accessor(post_aggregator, :fields, pa_list)
   end
   defp build_post_aggregation({post_aggregator, _, [field_name | options]}) do
     # This is for all post-aggregators that use a "fieldName" parameter,
