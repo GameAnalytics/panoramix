@@ -571,7 +571,7 @@ defmodule PanoramixTest do
                      unique_ids: hyperUnique(:user_unique)],
       post_aggregations: [
         cardinality: hyperUniqueCardinality(:unique_ids),
-        greatest: doubleGreatest(:event_count, :unique_ids),
+        greatest: doubleGreatest([aggregations.event_count, aggregations.unique_ids]),
         histogram: buckets(:histogram_data, bucketSize: 42, offset: 17)
       ]
     json = Panoramix.Query.to_json(query)
@@ -582,7 +582,10 @@ defmodule PanoramixTest do
               "fieldName" => "unique_ids"},
             %{"type" => "doubleGreatest",
               "name" => "greatest",
-              "fields" => ["event_count", "unique_ids"]},
+              "fields" => [
+                %{"fieldName" => "event_count", "type" => "fieldAccess"},
+                %{"fieldName" => "unique_ids", "type" => "fieldAccess"}
+              ]},
             %{"name" => "histogram",
               "type" => "buckets",
               "fieldName" => "histogram_data",
