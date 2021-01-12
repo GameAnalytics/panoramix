@@ -104,6 +104,13 @@ defmodule Panoramix.Query do
           %Panoramix.Query{} ->
             # Or are we extending an existing query?
             source
+          %{type: :query, query: %Panoramix.Query{} = nested_query} = datasource ->
+            # The datasource is a nested query. Let's convert it to JSON.
+            nested_query_json = Panoramix.Query.to_map(nested_query)
+            %Panoramix.Query{data_source: %{datasource | query: nested_query_json}}
+          %{type: _} = datasource ->
+            # Some other type of datasource. Let's include it literally.
+            %Panoramix.Query{data_source: datasource}
         end
       Map.merge(query, Map.new query_fields)
     end
@@ -584,7 +591,10 @@ defmodule Panoramix.Query do
     end
   end
 
-  def to_json(query) do
+  @doc """
+  Convert a Panoramix.Query struct into a map ready to be converted to JSON.
+  """
+  def to_map(%Panoramix.Query{} = query) do
     unless query.query_type do
       raise "query type not specified"
     end
@@ -613,6 +623,14 @@ defmodule Panoramix.Query do
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
+  end
+
+  @doc """
+  Convert a Panoramix.Query struct into its JSON representation.
+  """
+  def to_json(query) do
+    query
+    |> to_map()
     |> Jason.encode!
   end
 end
