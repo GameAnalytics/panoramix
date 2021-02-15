@@ -1022,4 +1022,39 @@ defmodule PanoramixTest do
                                                    %{"fieldName" => "foo_count", "type" => "fieldAccess"}]}]} ==
       decoded
   end
+
+  test "join query" do
+    query = from %{
+      type: :join,
+      left: "my_datasource",
+      right: %{type: :lookup, lookup: "my_lookup"},
+      rightPrefix: "r.",
+      condition: "foo = \"r.k\"",
+      joinType: :inner
+    },
+      query_type: "topN",
+      intervals: ["2020-11-01/P7D"],
+      granularity: :day,
+      aggregations: [foo_count: count()],
+      dimension: "r.v",
+      metric: :foo_count,
+      threshold: 10
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+    assert %{"queryType" => "topN",
+             "aggregations" => [%{"name" => "foo_count", "type" => "count"}],
+             "context" => %{"priority" => 0, "timeout" => 120_000},
+             "dataSource" => %{"type" => "join",
+                               "joinType" => "inner",
+                               "left" => "my_datasource",
+                               "right" => %{"lookup" => "my_lookup", "type" => "lookup"},
+                               "rightPrefix" => "r.",
+                               "condition" => "foo = \"r.k\""},
+             "dimension" => "r.v",
+             "granularity" => "day",
+             "intervals" => ["2020-11-01/P7D"],
+             "metric" => "foo_count",
+             "threshold" => 10} == decoded
+  end
 end

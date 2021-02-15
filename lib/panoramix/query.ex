@@ -98,22 +98,46 @@ defmodule Panoramix.Query do
     quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
       query =
         case source do
-          datasource when is_binary(datasource) ->
-            # Are we creating a new query from scratch, given a datasource?
-            %Panoramix.Query{data_source: datasource}
           %Panoramix.Query{} ->
-            # Or are we extending an existing query?
+            # Are we extending an existing query?
             source
-          %{type: :query, query: %Panoramix.Query{} = nested_query} = datasource ->
-            # The datasource is a nested query. Let's convert it to JSON.
-            nested_query_json = Panoramix.Query.to_map(nested_query)
-            %Panoramix.Query{data_source: %{datasource | query: nested_query_json}}
-          %{type: _} = datasource ->
-            # Some other type of datasource. Let's include it literally.
-            %Panoramix.Query{data_source: datasource}
+          _ ->
+            # Are we creating a new query from scratch, given some kind of datasource?
+            %Panoramix.Query{data_source: Panoramix.Query.datasource(source)}
         end
       Map.merge(query, Map.new query_fields)
     end
+  end
+
+  @doc nil
+  # exported only so that the `from` macro can call it.
+  def datasource(datasource) when is_binary(datasource) do
+    # We're using a named datasource as the source for the query
+    datasource
+  end
+  def datasource(%{type: :query, query: nested_query} = datasource) do
+    # The datasource is a nested query. Let's convert it to JSON if needed
+    nested_query_json =
+      case nested_query do
+        %Panoramix.Query{} ->
+          to_map(nested_query)
+        _ ->
+          # Assume it's already JSON-shaped
+          nested_query
+      end
+    %{datasource | query: nested_query_json}
+  end
+  def datasource(%{type: :join, left: left, right: right} = datasource) do
+    # A join between two datasources.
+    # A named datasource and a recursive join can only appear on the
+    # left side, but let's let Druid enforce that.
+    left_datasource = datasource(left)
+    right_datasource = datasource(right)
+    %{datasource | left: left_datasource, right: right_datasource}
+  end
+  def datasource(%{type: type} = datasource) when is_atom(type) do
+    # Some other type of datasource. Let's include it literally.
+    datasource
   end
 
   defp default_context() do
