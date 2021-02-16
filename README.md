@@ -126,6 +126,27 @@ q = from %{type: :query, query: inner_query},
       post_aggregations: [mean_events_per_foo: aggregations.event_count_sum / aggregations.foo_count]
 ```
 
+To make a join query, pass a map of the form `%{type: :join, left: left, right: right,
+joinType: :INNER | :LEFT, rightPrefix: "prefix_", condition: "condition"}`. Both the left
+and the right side can be a nested query as above, `%{type: :query, query: inner_query}`,
+which will be expanded. Other join sources will be passed to Druid unchanged. For example:
+
+```elixir
+use Panoramix
+
+from %{type: :join,
+       left: "sales",
+       right: %{type: :lookup, lookup: "store_to_country"},
+       rightPrefix: "r.",
+       condition: "store == \"r.k\"",
+       joinType: :INNER},
+  query_type: "groupBy",
+  intervals: ["0000/3000"],
+  granularity: "all",
+  dimensions: [%{type: "default", outputName: "country", dimension: "r.v"}],
+  aggregations: [country_revenue: longSum(:revenue)]
+```
+
 You can also build a JSON query yourself by passing it as a map to
 `post_query`:
 
