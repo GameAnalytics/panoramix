@@ -493,7 +493,7 @@ defmodule Panoramix.Query do
   defp build_filter({:^, _, [expression]}) do
     # We're recycling the ^ operator to incorporate an already created
     # filter into a filter expression.
-    quote bind_quoted: [expression: expression] do
+    quote generated: true, bind_quoted: [expression: expression] do
       case expression do
         %{type: _} = filter ->
           # Looks like a filter!
