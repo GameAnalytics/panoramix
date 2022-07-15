@@ -326,6 +326,9 @@ defmodule Panoramix.Query do
         value: unquote(constant)}
     end
   end
+  defp build_post_aggregation({:expression, _, [expression]}) do
+    {:%{}, [], [{:type, "expression"}, {:expression, expression}]}
+  end
   defp build_post_aggregation({post_aggregator, _, [field | options]})
   when post_aggregator in [:hllSketchToString, :hllSketchEstimateWithBounds, :hllSketchEstimate] do
     field_ref = build_post_aggregation(field)
