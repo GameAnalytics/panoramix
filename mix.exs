@@ -5,7 +5,7 @@ defmodule Panoramix.MixProject do
     [
       app: :panoramix,
       version: System.cmd("git", ["describe", "--tags"]) |> elem(0) |> String.trim_trailing |> String.trim_leading("v"),
-      elixir: "~> 1.8",
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       description: "Client library for sending requests to Druid.",
       source_url: "https://github.com/GameAnalytics/panoramix",

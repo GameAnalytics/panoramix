@@ -1,8 +1,7 @@
 language: elixir
 elixir:
-  - 1.8
-  - 1.9
-otp_release: '21.0'
+  - 1.12.3
+otp_release: '22.3.4'
 script:
     - mix compile --warnings-as-errors
     - mix test

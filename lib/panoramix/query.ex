@@ -377,14 +377,22 @@ defmodule Panoramix.Query do
           # Likewise
           filter
         # If either or both filter is an AND already, merge them together
-        {%{type: "and", fields: filter_a_fields}, %{type: "and", fields: filter_b_fields}} ->
-          %{type: "and", fields: filter_a_fields ++ filter_b_fields}
-        {%{type: "and", fields: filter_a_fields}, filter_b_unquoted} ->
-          %{type: "and", fields: filter_a_fields ++ [filter_b_unquoted]}
-        {filter_a_unquoted, %{type: "and", fields: filter_b_fields}} ->
-          %{type: "and", fields: [filter_a_unquoted] ++ filter_b_fields}
         {filter_a_unquoted, filter_b_unquoted} ->
-          %{type: "and", fields: [filter_a_unquoted, filter_b_unquoted]}
+          # Need to handle both atom and string keys
+          a_is_and = unquote(atom_or_string_value(quote(do: filter_a_unquoted), :type)) == "and"
+          b_is_and = unquote(atom_or_string_value(quote(do: filter_b_unquoted), :type)) == "and"
+          filter_a_fields = unquote(atom_or_string_value(quote(do: filter_a_unquoted), :fields))
+          filter_b_fields = unquote(atom_or_string_value(quote(do: filter_b_unquoted), :fields))
+          case {a_is_and, b_is_and} do
+            {true, true} ->
+              %{type: "and", fields: filter_a_fields ++ filter_b_fields}
+            {true, false} ->
+              %{type: "and", fields: filter_a_fields ++ [filter_b_unquoted]}
+            {false, true} ->
+              %{type: "and", fields: [filter_a_unquoted] ++ filter_b_fields}
+            {false, false} ->
+              %{type: "and", fields: [filter_a_unquoted, filter_b_unquoted]}
+          end
       end
     end
   end
@@ -533,6 +541,21 @@ defmodule Panoramix.Query do
                     dimensions: [unquote(dimension_spec_a),
                                  unquote(dimension_spec_b)]}
     end
+  end
+
+  defp atom_or_string_value(map, key_atom) do
+    # Given a macro fragment that evaluates to a map, and an atom,
+    # return a macro fragment that returns the value of that atom
+    # in the map, or the value of the corresponding string in the map,
+    # or nil if neither is present in the map.
+    var = Macro.unique_var(:x, __MODULE__)
+    key_string = Atom.to_string(key_atom)
+    {:case, [], [
+        map,
+        [do: [
+          {:->, [], [[{:%{}, [], [{key_atom, var}]}], var]},
+          {:->, [], [[{:%{}, [], [{key_string, var}]}], var]},
+          {:->, [], [[{:%{}, [], []}], nil]}]]]}
   end
 
   # TODO: handle more extraction functions
