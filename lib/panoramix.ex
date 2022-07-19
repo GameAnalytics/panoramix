@@ -128,7 +128,7 @@ defmodule Panoramix do
   """
   @moduledoc since: "1.0.0"
 
-  @spec post_query(%Panoramix.Query{} | map(), atom()) :: {:ok, term()} |
+  @spec post_query(Panoramix.Query.t() | map(), atom()) :: {:ok, term()} |
   {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def post_query(query, profile \\ :default) do
     url_path = "/druid/v2"
@@ -143,7 +143,7 @@ defmodule Panoramix do
     request_and_decode(profile, :post, url_path, body, headers)
   end
 
-  @spec post_query!(%Panoramix.Query{} | map(), atom()) :: term()
+  @spec post_query!(Panoramix.Query.t() | map(), atom()) :: term()
   def post_query!(query, profile \\ :default) do
     case post_query(query, profile) do
       {:ok, response} -> response
@@ -176,12 +176,9 @@ defmodule Panoramix do
     url = broker_profile[:base_url] <> url_path
     options = http_options(url, broker_profile)
 
-    with {:ok, http_response} <-
-      HTTPoison.request(method, url, body, headers, options),
-      {:ok, body} <- maybe_handle_druid_error(http_response),
-      {:ok, decoded} <- Jason.decode body
-    do
-      {:ok, decoded}
+    with {:ok, http_response} <- HTTPoison.request(method, url, body, headers, options),
+         {:ok, body} <- maybe_handle_druid_error(http_response) do
+      Jason.decode(body)
     end
   end
 
