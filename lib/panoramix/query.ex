@@ -550,12 +550,12 @@ defmodule Panoramix.Query do
     # or nil if neither is present in the map.
     var = Macro.unique_var(:x, __MODULE__)
     key_string = Atom.to_string(key_atom)
-    {:case, [], [
+    {:case, [generated: true], [
         map,
         [do: [
-          {:->, [], [[{:%{}, [], [{key_atom, var}]}], var]},
-          {:->, [], [[{:%{}, [], [{key_string, var}]}], var]},
-          {:->, [], [[{:%{}, [], []}], nil]}]]]}
+          {:->, [generated: true], [[{:%{}, [], [{key_atom, var}]}], var]},
+          {:->, [generated: true], [[{:%{}, [], [{key_string, var}]}], var]},
+          {:->, [generated: true], [[{:%{}, [], []}], nil]}]]]}
   end
 
   # TODO: handle more extraction functions
