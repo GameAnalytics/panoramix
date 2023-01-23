@@ -43,7 +43,7 @@ defmodule Panoramix.MixProject do
   defp deps do
     [
       {:jason, "~> 1.1"},
-      {:httpoison, "~> 2.0"},
+      {:httpoison, "~> 1.0 or ~> 2.0"},
       {:timex, "~> 3.1"},
       {:dialyxir, "~> 1.0-rc.3", only: [:dev], runtime: false},
       {:credo, "~> 1.6.5", only: [:dev, :test], runtime: false},
