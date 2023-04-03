@@ -1368,4 +1368,30 @@ defmodule PanoramixTest do
              "subtotalsSpec" => [["d1"], ["d2", "d3"]]
            } = Jason.decode!(json)
   end
+
+  test "dynamic building of aggregations" do
+    aggregations = [
+      %{
+        type: "filtered",
+        filter: %{
+          type: "selector",
+          dimension: "dimension_id",
+          value: "value"
+        },
+        aggregator: %{
+          type: "longSum",
+          fieldName: "__count",
+          name: "dynamic_aggregator"
+        }
+      }
+    ]
+
+    query =
+      from "table",
+        query_type: "topN",
+        aggregations: ^aggregations,
+        dimension: :sum
+
+    assert ^aggregations = query.aggregations
+  end
 end

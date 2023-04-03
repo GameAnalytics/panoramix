@@ -279,6 +279,10 @@ defmodule Panoramix.Query do
     end
   end
 
+  defp build_aggregations({:^, _, [aggregations]}) do
+    aggregations
+  end
+
   defp build_aggregations(aggregations) do
     Enum.map(aggregations, &build_aggregation/1)
   end
