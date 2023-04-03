@@ -1351,4 +1351,21 @@ defmodule PanoramixTest do
              "threshold" => 10
            } == decoded
   end
+
+  test "subtotals spec" do
+    query =
+      from "table",
+        query_type: "groupBy",
+        subtotals_spec: [[:d1], [:d2, :d3]]
+
+    assert query.subtotals_spec
+
+    json = Panoramix.Query.to_json(query)
+
+    assert %{
+             "queryType" => "groupBy",
+             "context" => %{"priority" => 0, "timeout" => 120_000},
+             "subtotalsSpec" => [["d1"], ["d2", "d3"]]
+           } = Jason.decode!(json)
+  end
 end

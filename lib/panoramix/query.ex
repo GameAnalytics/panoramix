@@ -22,12 +22,31 @@ defmodule Panoramix.Query do
             search_dimensions: nil,
             sort: nil,
             threshold: nil,
+            subtotals_spec: nil,
             to_include: nil,
             virtual_columns: nil,
             query_type: nil
 
   # A query has type Panoramix.query.t()
   @type t :: %__MODULE__{}
+
+  # For these fields, we just include the value verbatim.
+  @unmapped_query_fields [
+    :analysis_types,
+    :dimension,
+    :dimensions,
+    :granularity,
+    :limit,
+    :limit_spec,
+    :merge,
+    :metric,
+    :query,
+    :query_type,
+    :search_dimensions,
+    :sort,
+    :subtotals_spec,
+    :threshold
+  ]
 
   @doc """
   Use `from` macro to build Druid queries. See [Druid documentation](http://druid.io/docs/latest/querying/querying.html) to learn about
@@ -71,6 +90,7 @@ defmodule Panoramix.Query do
         threshold: nil,
         to_include: nil,
         virtual_columns: nil,
+        subtotals_spec: nil
       }
     ```
 
@@ -179,23 +199,7 @@ defmodule Panoramix.Query do
     end
   end
 
-  defp build_query({field, value}, query_fields)
-       when field in [
-              :granularity,
-              :dimension,
-              :dimensions,
-              :metric,
-              :query_type,
-              :threshold,
-              :merge,
-              :analysis_types,
-              :limit_spec,
-              :limit,
-              :search_dimensions,
-              :query,
-              :sort
-            ] do
-    # For these fields, we just include the value verbatim.
+  defp build_query({field, value}, query_fields) when field in @unmapped_query_fields do
     [{field, value}] ++ query_fields
   end
 
@@ -801,28 +805,29 @@ defmodule Panoramix.Query do
     end
 
     [
-      queryType: query.query_type,
-      dataSource: query.data_source,
-      intervals: query.intervals,
-      granularity: query.granularity,
       aggregations: query.aggregations,
-      postAggregations: query.post_aggregations,
-      filter: query.filter,
+      analysisTypes: query.analysis_types,
+      bound: query.bound,
+      context: query.context,
+      dataSource: query.data_source,
       dimension: query.dimension,
       dimensions: query.dimensions,
-      metric: query.metric,
-      threshold: query.threshold,
-      context: query.context,
-      toInclude: query.to_include,
-      merge: query.merge,
-      analysisTypes: query.analysis_types,
-      limitSpec: query.limit_spec,
-      bound: query.bound,
-      virtualColumns: query.virtual_columns,
+      filter: query.filter,
+      granularity: query.granularity,
+      intervals: query.intervals,
       limit: query.limit,
-      searchDimensions: query.search_dimensions,
+      limitSpec: query.limit_spec,
+      merge: query.merge,
+      metric: query.metric,
+      postAggregations: query.post_aggregations,
       query: query.query,
-      sort: query.sort
+      queryType: query.query_type,
+      searchDimensions: query.search_dimensions,
+      sort: query.sort,
+      subtotalsSpec: query.subtotals_spec,
+      threshold: query.threshold,
+      toInclude: query.to_include,
+      virtualColumns: query.virtual_columns
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Enum.into(%{})
