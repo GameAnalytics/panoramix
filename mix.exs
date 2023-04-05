@@ -17,7 +17,8 @@ defmodule Panoramix.MixProject do
       source_url: "https://github.com/GameAnalytics/panoramix",
       homepage_url: "https://github.com/GameAnalytics/panoramix",
       docs: [
-        main: "Panoramix", # The main page in the docs
+        # The main page in the docs
+        main: "Panoramix",
         extras: ["README.md"]
       ]
     ]
@@ -47,7 +48,7 @@ defmodule Panoramix.MixProject do
       {:timex, "~> 3.1"},
       {:dialyxir, "~> 1.0-rc.3", only: [:dev], runtime: false},
       {:credo, "~> 1.7.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.29.1", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.29.1", only: :dev, runtime: false}
     ]
   end
 end

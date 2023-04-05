@@ -4,7 +4,6 @@ defmodule Panoramix.Error do
 end
 
 defmodule Panoramix do
-
   @moduledoc """
   Post a query to Druid Broker or request its status.
 
@@ -128,16 +127,21 @@ defmodule Panoramix do
   """
   @moduledoc since: "1.0.0"
 
-  @spec post_query(Panoramix.Query.t() | map(), atom()) :: {:ok, term()} |
-  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
+  @spec post_query(Panoramix.Query.t() | map(), atom()) ::
+          {:ok, term()}
+          | {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def post_query(query, profile \\ :default) do
     url_path = "/druid/v2"
-    body = case query do
-             %Panoramix.Query{} ->
-               Panoramix.Query.to_json(query)
-             _ ->
-               Jason.encode!(query)
-           end
+
+    body =
+      case query do
+        %Panoramix.Query{} ->
+          Panoramix.Query.to_json(query)
+
+        _ ->
+          Jason.encode!(query)
+      end
+
     headers = [{"Content-Type", "application/json"}]
 
     request_and_decode(profile, :post, url_path, body, headers)
@@ -151,8 +155,9 @@ defmodule Panoramix do
     end
   end
 
-  @spec status(atom) :: {:ok, term()} |
-  {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
+  @spec status(atom) ::
+          {:ok, term()}
+          | {:error, HTTPoison.Error.t() | Jason.DecodeError.t() | Panoramix.Error.t()}
   def status(profile \\ :default) do
     url_path = "/status"
     body = ""
@@ -171,8 +176,11 @@ defmodule Panoramix do
 
   defp request_and_decode(profile, method, url_path, body, headers) do
     broker_profiles = Application.get_env(:panoramix, :broker_profiles)
-    broker_profile = broker_profiles[profile] ||
-      raise ArgumentError, "no broker profile with name #{profile}"
+
+    broker_profile =
+      broker_profiles[profile] ||
+        raise ArgumentError, "no broker profile with name #{profile}"
+
     url = broker_profile[:base_url] <> url_path
     options = http_options(url, broker_profile)
 
@@ -200,12 +208,14 @@ defmodule Panoramix do
       cacertfile = broker_profile[:cacertfile] ->
         # The CA certificate is in a file.
         [cacertfile: cacertfile]
+
       cacert = broker_profile[:cacert] ->
         # The CA certificate is provided as a PEM-encoded string.
         # Need to convert it to DER.
         pem_entries = :public_key.pem_decode(cacert)
-        cacerts = for {:"Certificate", cert, :not_encrypted} <- pem_entries, do: cert
+        cacerts = for {:Certificate, cert, :not_encrypted} <- pem_entries, do: cert
         [cacerts: cacerts]
+
       true ->
         # No CA certificate specified.
         []
@@ -227,27 +237,30 @@ defmodule Panoramix do
     [recv_timeout: request_timeout]
   end
 
-  defp maybe_handle_druid_error(
-    %HTTPoison.Response{status_code: 200, body: body}) do
+  defp maybe_handle_druid_error(%HTTPoison.Response{status_code: 200, body: body}) do
     {:ok, body}
   end
-  defp maybe_handle_druid_error(
-    %HTTPoison.Response{status_code: status_code, body: body}) do
+
+  defp maybe_handle_druid_error(%HTTPoison.Response{status_code: status_code, body: body}) do
     message =
       "Druid error (code #{status_code}): " <>
-      case Jason.decode body do
-        {:ok, %{"error" => _} = decoded} ->
-          # Usually we'll get a JSON object from Druid with "error",
-          # "errorMessage", "errorClass" and "host". Some of them
-          # might be null.
-          Enum.join(
-            for field <- ["error", "errorMessage", "errorClass", "host"],
-            decoded[field] do
-              "#{field}: #{decoded[field]}"
-            end, " ")
-        _ ->
-          "undecodable error: " <> body
-      end
+        case Jason.decode(body) do
+          {:ok, %{"error" => _} = decoded} ->
+            # Usually we'll get a JSON object from Druid with "error",
+            # "errorMessage", "errorClass" and "host". Some of them
+            # might be null.
+            Enum.join(
+              for field <- ["error", "errorMessage", "errorClass", "host"],
+                  decoded[field] do
+                "#{field}: #{decoded[field]}"
+              end,
+              " "
+            )
+
+          _ ->
+            "undecodable error: " <> body
+        end
+
     {:error, %Panoramix.Error{message: message, code: status_code}}
   end
 
@@ -263,10 +276,11 @@ defmodule Panoramix do
       "2018-07-20T01:02:03+00:00"
   """
   def format_time!(%DateTime{} = datetime) do
-    Timex.format! datetime, "{ISO:Extended}"
+    Timex.format!(datetime, "{ISO:Extended}")
   end
+
   def format_time!(%Date{} = date) do
-    Timex.format! date, "{ISOdate}"
+    Timex.format!(date, "{ISOdate}")
   end
 
   defmacro __using__(_params) do
@@ -274,5 +288,4 @@ defmodule Panoramix do
       import Panoramix.Query, only: [from: 2]
     end
   end
-
 end
