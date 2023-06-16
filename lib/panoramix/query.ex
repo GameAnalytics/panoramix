@@ -419,6 +419,17 @@ defmodule Panoramix.Query do
     post_aggregation_field_accessor(post_aggregator, :fields, pa_list)
   end
 
+  defp build_post_aggregation({:thetaSketchEstimate, _, [field | options]}) do
+    pa = build_post_aggregation(field)
+    post_aggregation_field_accessor(:thetaSketchEstimate, :field, pa, options)
+  end
+
+  defp build_post_aggregation({:thetaSketchSetOp, _, [func, fields]}) do
+    pa_list = for field <- fields, do: build_post_aggregation(field)
+    func = String.upcase("#{func}")
+    post_aggregation_field_accessor(:thetaSketchSetOp, :fields, pa_list, [[{:func, func}]])
+  end
+
   defp build_post_aggregation({post_aggregator, _, [field_name | options]}) do
     # This is for all post-aggregators that use a "fieldName" parameter,
     # and optionally a bunch of extra parameters.

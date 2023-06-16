@@ -1243,6 +1243,42 @@ defmodule PanoramixTest do
            ]
   end
 
+  test "builds a query with theta sketch operations" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day,
+        metric: %{type: "dimension"},
+        threshold: 10,
+        dimension: "foo",
+        aggregations: [
+          sketch_a: thetaSketch(:foo),
+          sketch_b: thetaSketch(:bar)
+        ],
+        post_aggregations: [
+          post_a: thetaSketchEstimate(aggregations.sketch_a, errorBoundsStdDev: 1),
+          post_b: thetaSketchEstimate(thetaSketchSetOp(:intersect, [aggregations.sketch_a, aggregations.sketch_b]))
+        ]
+      )
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+
+    assert Jason.decode!(json)["postAggregations"] == [
+      %{"name" => "post_a",
+        "type" => "thetaSketchEstimate",
+        "field" => %{"type" => "fieldAccess", "fieldName" => "sketch_a"},
+        "errorBoundsStdDev" => 1},
+      %{"name" => "post_b",
+        "type" => "thetaSketchEstimate",
+        "field" => %{"type" => "thetaSketchSetOp",
+                     "func" => "INTERSECT",
+                     "fields" => [%{"type" => "fieldAccess", "fieldName" => "sketch_a"},
+                                  %{"type" => "fieldAccess", "fieldName" => "sketch_b"}]}}
+    ]
+  end
+
   test "nested query" do
     inner_query =
       from("my_datasource",
