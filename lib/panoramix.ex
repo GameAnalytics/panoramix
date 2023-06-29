@@ -174,8 +174,9 @@ defmodule Panoramix do
     end
   end
 
-  defp request_and_decode(profile, method, url_path, body, headers) do
+  defp request_and_decode(profile, method, url_path, body, headers, attempt \\ 1) do
     broker_profiles = Application.get_env(:panoramix, :broker_profiles)
+    max_attempts = Application.get_env(:panoramix, :max_request_attempts, 1)
 
     broker_profile =
       broker_profiles[profile] ||
@@ -187,6 +188,13 @@ defmodule Panoramix do
     with {:ok, http_response} <- HTTPoison.request(method, url, body, headers, options),
          {:ok, body} <- maybe_handle_druid_error(http_response) do
       Jason.decode(body)
+    else
+      {:error, _reason} when attempt < max_attempts ->
+        delay = Application.get_env(:panoramix, :request_attempts_delay_ms, 0)
+        Process.sleep(delay)
+        request_and_decode(profile, method, url_path, body, headers, attempt + 1)
+      error ->
+        error
     end
   end
 
