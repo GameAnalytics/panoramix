@@ -39,6 +39,8 @@ config :panoramix,
 
 * `request_timeout`: Query timeout in millis to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
 * `query_priority`: Priority to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
+* `max_request_attempts`: Maximum number of request attempts before returning an error result. Optional, default is 1 attempt.
+* `request_attempts_delay_ms`: Delay in milliseconds before attempting a new request in case of error response. Optional, default is no delay.
 
 [context-druid-doc-link]: http://druid.io/docs/latest/querying/query-context.html
 
