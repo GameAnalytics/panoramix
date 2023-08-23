@@ -183,8 +183,9 @@ defmodule Panoramix do
 
     url = broker_profile[:base_url] <> url_path
     options = http_options(url, broker_profile)
+    httpoison_module = Application.get_env(:panoramix, :httpoison_module, HTTPoison)
 
-    with {:ok, http_response} <- HTTPoison.request(method, url, body, headers, options),
+    with {:ok, http_response} <- httpoison_module.request(method, url, body, headers, options),
          {:ok, body} <- maybe_handle_druid_error(http_response) do
       Jason.decode(body)
     end
