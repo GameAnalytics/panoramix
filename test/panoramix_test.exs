@@ -1257,8 +1257,10 @@ defmodule PanoramixTest do
           sketch_b: thetaSketch(:bar)
         ],
         post_aggregations: [
+          constant: thetaSketchConstant("AgMDAAAazJMCAAAAAACAPzz9j7pWTMdROWGf15uY1nI="),
           post_a: thetaSketchEstimate(aggregations.sketch_a, errorBoundsStdDev: 1),
-          post_b: thetaSketchEstimate(thetaSketchSetOp(:intersect, [aggregations.sketch_a, aggregations.sketch_b]))
+          post_b: thetaSketchEstimate(thetaSketchSetOp(:intersect, [aggregations.sketch_a, aggregations.sketch_b, aggregations.constant])),
+          a_to_string: thetaSketchToString(aggregations.sketch_a)
         ]
       )
 
@@ -1266,6 +1268,9 @@ defmodule PanoramixTest do
     assert is_binary(json)
 
     assert Jason.decode!(json)["postAggregations"] == [
+      %{"name" => "constant",
+        "type" => "thetaSketchConstant",
+        "value" => "AgMDAAAazJMCAAAAAACAPzz9j7pWTMdROWGf15uY1nI="},
       %{"name" => "post_a",
         "type" => "thetaSketchEstimate",
         "field" => %{"type" => "fieldAccess", "fieldName" => "sketch_a"},
@@ -1275,7 +1280,11 @@ defmodule PanoramixTest do
         "field" => %{"type" => "thetaSketchSetOp",
                      "func" => "INTERSECT",
                      "fields" => [%{"type" => "fieldAccess", "fieldName" => "sketch_a"},
-                                  %{"type" => "fieldAccess", "fieldName" => "sketch_b"}]}}
+                                  %{"type" => "fieldAccess", "fieldName" => "sketch_b"},
+                                  %{"type" => "fieldAccess", "fieldName" => "constant"}]}},
+      %{"name" => "a_to_string",
+        "type" => "thetaSketchToString",
+        "field" => %{"type" => "fieldAccess", "fieldName" => "sketch_a"}}
     ]
   end
 
