@@ -34,11 +34,13 @@ config :panoramix,
       http_username:  "username",
       http_password:  "password"
     ]
-  ]
+  ],
+  httpoison_module: HTTPoison
 ```
 
 * `request_timeout`: Query timeout in millis to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
 * `query_priority`: Priority to be used in [`Context`](context-druid-doc-link) of all Druid queries. 
+* `httpoison_module`: Module to call when making HTTP requests. Defaults to `HTTPoison` if not specified, but you can provide a custom wrapper module if you wish. See [HTTPoison.Base](https://hexdocs.pm/httpoison/HTTPoison.Base.html) for examples.
 
 [context-druid-doc-link]: http://druid.io/docs/latest/querying/query-context.html
 
