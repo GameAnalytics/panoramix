@@ -906,7 +906,7 @@ defmodule PanoramixTest do
                  "name" => "plus_one",
                  "type" => "expression",
                  "expression" => "foo + 1",
-                 "outputType" => "LONG"
+                 "outputType" => "long"
                }
              ],
              "aggregations" => [
