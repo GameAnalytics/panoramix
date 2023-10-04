@@ -788,12 +788,7 @@ defmodule Panoramix.Query do
             expression: expression,
             output_type: output_type
           ] do
-      output_type = String.upcase(String.Chars.to_string(output_type))
-
-      unless output_type in ["LONG", "FLOAT", "DOUBLE", "STRING"] do
-        raise ArgumentError,
-              "Unexpected output type #{output_type}, expected one of :long, :float, :double, :string"
-      end
+      output_type = String.Chars.to_string(output_type)
 
       %{
         "type" => "expression",
