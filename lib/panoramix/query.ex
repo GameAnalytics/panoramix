@@ -321,6 +321,25 @@ defmodule Panoramix.Query do
           }
   end
 
+  defp build_aggregation({name, {aggregation_type, _, [field_names, keywords]}})
+       when is_list(field_names) do
+    # e.g. cardinality(["field1", "field2"], [round: true, byRow: true])
+    normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
+
+    quote generated: true,
+          bind_quoted: [
+            aggregation_type: normalized_aggregation_type,
+            name: name,
+            fields: field_names,
+            keywords: keywords
+          ] do
+      Map.merge(
+        %{type: aggregation_type, name: name, fields: fields},
+        Map.new(keywords)
+      )
+    end
+  end
+
   defp build_aggregation({name, {aggregation_type, _, [field_name, keywords]}}) do
     # e.g. hyperUnique(:user_unique, round: true)
     normalized_aggregation_type = normalize_aggregation_type_name(aggregation_type)
