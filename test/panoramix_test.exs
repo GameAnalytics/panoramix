@@ -167,6 +167,33 @@ defmodule PanoramixTest do
     # IO.puts json
   end
 
+  test "build a query with multiple fields in aggregation" do
+    query =
+      from("my_datasource",
+        query_type: "topN",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        granularity: :day
+      )
+
+    query =
+      query
+      |> from(aggregations: [my_cardinality: cardinality(["f1", "f2"], byRow: true)])
+
+    json = Panoramix.Query.to_json(query)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+
+    assert decoded["aggregations"] == [
+             %{
+               "name" => "my_cardinality",
+               "type" => "cardinality",
+               "fields" => ["f1", "f2"],
+               "byRow" => true
+             }
+           ]
+
+  end
+
   test "build query with column comparison filter" do
     query =
       from("my_datasource",
