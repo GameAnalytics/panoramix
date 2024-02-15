@@ -438,10 +438,19 @@ defmodule Panoramix.Query do
     post_aggregation_field_accessor(post_aggregator, :fields, pa_list)
   end
 
-  defp build_post_aggregation({theta_sketch_post_aggregator, _, [field | options]})
-       when theta_sketch_post_aggregator in [:thetaSketchEstimate, :thetaSketchToString] do
+  defp build_post_aggregation({sketch_post_aggregator, _, [field | options]})
+  when sketch_post_aggregator in [
+    :thetaSketchEstimate,
+    :thetaSketchToString,
+    :quantilesDoublesSketchToQuantile,
+    :quantilesDoublesSketchToQuantiles,
+    :quantilesDoublesSketchToHistogram,
+    :quantilesDoublesSketchToRank,
+    :quantilesDoublesSketchToCDF,
+    :quantilesDoublesSketchToString,
+  ] do
     pa = build_post_aggregation(field)
-    post_aggregation_field_accessor(theta_sketch_post_aggregator, :field, pa, options)
+    post_aggregation_field_accessor(sketch_post_aggregator, :field, pa, options)
   end
 
   defp build_post_aggregation({:thetaSketchSetOp, _, [func, fields]}) do
