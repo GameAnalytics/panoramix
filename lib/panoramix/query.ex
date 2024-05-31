@@ -142,21 +142,19 @@ defmodule Panoramix.Query do
 
           _ ->
             # Are we creating a new query from scratch, given some kind of datasource?
-            %Panoramix.Query{data_source: Panoramix.Query.datasource(source)}
+            %Panoramix.Query{data_source: source}
         end
 
       Map.merge(query, Map.new(query_fields))
     end
   end
 
-  @doc nil
-  # exported only so that the `from` macro can call it.
-  def datasource(datasource) when is_binary(datasource) do
+  defp datasource(datasource) when is_binary(datasource) do
     # We're using a named datasource as the source for the query
     datasource
   end
 
-  def datasource(%{type: :query, query: nested_query} = datasource) do
+  defp datasource(%{type: :query, query: nested_query} = datasource) do
     # The datasource is a nested query. Let's convert it to JSON if needed
     nested_query_json =
       case nested_query do
@@ -171,7 +169,7 @@ defmodule Panoramix.Query do
     %{datasource | query: nested_query_json}
   end
 
-  def datasource(%{type: :join, left: left, right: right} = datasource) do
+  defp datasource(%{type: :join, left: left, right: right} = datasource) do
     # A join between two datasources.
     # A named datasource and a recursive join can only appear on the
     # left side, but let's let Druid enforce that.
@@ -180,7 +178,7 @@ defmodule Panoramix.Query do
     %{datasource | left: left_datasource, right: right_datasource}
   end
 
-  def datasource(%{type: type} = datasource) when is_atom(type) do
+  defp datasource(%{type: type} = datasource) when is_atom(type) do
     # Some other type of datasource. Let's include it literally.
     datasource
   end
@@ -852,7 +850,7 @@ defmodule Panoramix.Query do
       analysisTypes: query.analysis_types,
       bound: query.bound,
       context: query.context,
-      dataSource: query.data_source,
+      dataSource: datasource(query.data_source),
       dimension: query.dimension,
       dimensions: query.dimensions,
       filter: query.filter,
