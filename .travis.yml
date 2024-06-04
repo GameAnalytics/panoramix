@@ -20,6 +20,9 @@ before_cache:
 cache:
     directories:
         - _build/dev
+
+before_deploy:
+  - rvm install 2.7
 deploy:
     provider: script
     skip_cleanup: true
