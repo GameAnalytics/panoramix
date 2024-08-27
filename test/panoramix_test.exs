@@ -1466,4 +1466,50 @@ defmodule PanoramixTest do
 
     assert ^aggregations = query.aggregations
   end
+
+  test "extend query with new aggregations, post-aggregations, virtual columns" do
+    query1 = from "table",
+      query_type: "timeseries",
+      virtual_columns: [
+        plus_one: expression("foo + 1", :long)
+      ],
+      aggregations: [
+        foo_sum: longSum(:foo),
+        event_count: count()
+      ]
+
+    assert %{"aggregations" => [%{"fieldName" => "foo", "name" => "foo_sum", "type" => "longSum"},
+                                %{"name" => "event_count", "type" => "count"}],
+             "queryType" => "timeseries",
+             "virtualColumns" => [%{"expression" => "foo + 1", "name" => "plus_one", "outputType" => "long", "type" => "expression"}]} =
+      query1 |> Panoramix.Query.to_json() |> Jason.decode!()
+
+    query2 = from query1,
+      query_type: "topN",
+      virtual_columns: [
+        plus_two: expression("foo + 2", :double)
+      ],
+      aggregations: [
+        event_count: longSum(:count),
+        plus_one_sum: longSum(:plus_one)
+      ],
+      post_aggregations: [
+        sum_all: aggregations.foo_sum + aggregations.plus_one_sum
+      ]
+
+    # The "event_count" aggregation has been changed,
+    # the "foo_sum" aggregation stays the same,
+    # and the "plus_one_sum" aggregation has been added.
+    assert %{"aggregations" => [%{"fieldName" => "foo", "name" => "foo_sum", "type" => "longSum"},
+                                %{"fieldName" => "count", "name" => "event_count", "type" => "longSum"},
+                                %{"fieldName" => "plus_one", "name" => "plus_one_sum", "type" => "longSum"}],
+             # A post-aggregation has been added
+             "postAggregations" => [%{"fields" => [%{"fieldName" => "foo_sum", "type" => "fieldAccess"}, %{"fieldName" => "plus_one_sum", "type" => "fieldAccess"}], "fn" => "+", "name" => "sum_all", "type" => "arithmetic"}],
+             # The query type has changed
+             "queryType" => "topN",
+             # A virtual column has been added
+             "virtualColumns" => [%{"expression" => "foo + 1", "name" => "plus_one", "outputType" => "long", "type" => "expression"},
+                                  %{"expression" => "foo + 2", "name" => "plus_two", "outputType" => "double", "type" => "expression"}]} =
+      query2 |> Panoramix.Query.to_json() |> Jason.decode!()
+  end
 end

@@ -125,6 +125,60 @@ defmodule Panoramix.Query do
       }
     ```
 
+  ## Modifying a query
+
+  When the first argument to `from` is a `Panoramix.Query` struct, the
+  return value is a copy of the struct where the specified fields have
+  been changed.
+
+  For most fields, the values passed as arguments to `from` overwrite
+  the existing values in the struct.  For `aggregations`,
+  `post_aggregations` and `virtual_columns`, the values are combined
+  instead.  Entries with the same name are overwritten, and other
+  entries are added to the list.
+
+  In the example below, the `intervals` field is replaced, and the
+  `event_count` aggregator is modified.  The other aggregator as well
+  as all other fields stay the same.
+
+    ```elixir
+      iex> original_query = from "my_datasource",
+      ...>       query_type: "timeseries",
+      ...>       intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+      ...>       aggregations: [event_count: count(),
+      ...>                      unique_ids: hllSketchMerge(:user_unique, round: true)],
+      ...>       post_aggregations: [event_count_per_user: aggregations.event_count / hllSketchEstimate(aggregations.unique_ids)
+      %Panoramix.Query{
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        aggregations: [
+          %{name: :event_count, type: "count"},
+          %{name: :unique_ids, type: "HLLSketchMerge", fieldName: :user_unique, round: true}
+        ],
+        post_aggregations: [
+          %{name: :event_count_per_user, type: "arithmetic", fn: :/, fields: [
+            %{fieldName: :event_count, type: "fieldAccess"},
+            %{type: "HLLSketchEstimate", field: %{fieldName: :unique_ids, type: "fieldAccess"}}
+          ]}
+        ]
+      }
+      iex> new_query = from original_query,
+      ...>       intervals: ["2018-06-29T00:00:00+00:00/2018-07-05T00:00:00+00:00"],
+      ...>       aggregations: [event_count: longSum(:count)]
+      %Panoramix.Query{
+        intervals: ["2018-06-29T00:00:00+00:00/2018-07-05T00:00:00+00:00"],
+        aggregations: [
+          %{name: :event_count, type: "longSum", fieldName: :count},
+          %{fieldName: :user_unique, name: :unique_ids, round: true, type: "HLLSketchMerge"}
+        ],
+        post_aggregations: [
+          %{name: :event_count_per_user, type: "arithmetic", fn: :/, fields: [
+            %{fieldName: :event_count, type: "fieldAccess"},
+            %{type: "HLLSketchEstimate", field: %{fieldName: :unique_ids, type: "fieldAccess"}}
+          ]}
+        ]
+      }
+    ```
+
   """
   @doc since: "1.0.0"
   defmacro from(source, kw) do
@@ -145,7 +199,7 @@ defmodule Panoramix.Query do
             %Panoramix.Query{data_source: source}
         end
 
-      Map.merge(query, Map.new(query_fields))
+      Map.merge(query, Map.new(query_fields), &Panoramix.Query.merge_query_field/3)
     end
   end
 
@@ -835,6 +889,45 @@ defmodule Panoramix.Query do
     quote generated: true, bind_quoted: [context: context, default_context: default_context()] do
       Map.merge(default_context, context)
     end
+  end
+
+  def merge_query_field(key, old_value, new_value)
+  when key in [:aggregations, :post_aggregations, :virtual_columns] do
+    # For aggregations, post-aggregations and virtual columns, combine
+    # the two lists, overriding old entries when the same name is
+    # present in both lists.
+    case {old_value, new_value} do
+      {empty, _} when empty in [nil, []] ->
+        new_value
+      {_, empty} when empty in [nil, []] ->
+        old_value
+      {[_|_], [_|_]} ->
+        new_names = Enum.map(new_value, &field_name/1)
+        Enum.reject(old_value,
+          fn old ->
+            Enum.member?(new_names, field_name(old))
+          end) ++ new_value
+    end
+  end
+  def merge_query_field(_key, _old_value, new_value) do
+    # For all other keys, the new value overrides the old value.
+    new_value
+  end
+
+  # Get the name of an aggregation, post-aggregation or virtual column,
+  # as a string.
+  defp field_name(%{name: name}) do
+    String.Chars.to_string(name)
+  end
+  defp field_name(%{"name" => name}) do
+    String.Chars.to_string(name)
+  end
+  # Filtered aggregators may have their names in the inner aggregator.
+  defp field_name(%{aggregator: aggregator}) do
+    field_name(aggregator)
+  end
+  defp field_name(%{"aggregator" => aggregator}) do
+    field_name(aggregator)
   end
 
   @doc """
