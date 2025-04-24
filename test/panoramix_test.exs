@@ -642,6 +642,34 @@ defmodule PanoramixTest do
            } == decoded["context"]
   end
 
+  test "extend a query with a query context" do
+    query_1 =
+      from("my_datasource",
+        query_type: "timeseries",
+        intervals: ["2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00"],
+        context: %{
+          timeout: 0,
+          priority: 100,
+          queryId: "my-unique-query-id",
+          skipEmptyBuckets: true
+        }
+      )
+
+    query_2 = from(query_1,
+      filter: dimensions.foo == "bar")
+
+    json = Panoramix.Query.to_json(query_2)
+    assert is_binary(json)
+    decoded = Jason.decode!(json)
+
+    assert %{
+             "timeout" => 0,
+             "priority" => 100,
+             "queryId" => "my-unique-query-id",
+             "skipEmptyBuckets" => true
+           } == decoded["context"]
+  end
+
   test "build a query with a query context while supplying default values from app config" do
     query =
       from("my_datasource",

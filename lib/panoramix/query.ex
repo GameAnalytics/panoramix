@@ -182,12 +182,12 @@ defmodule Panoramix.Query do
   """
   @doc since: "1.0.0"
   defmacro from(source, kw) do
-    # Supply default "context" parameters (timeout, priority) so that
-    # we always have some to work with. If these have already been supplied
-    # in kw then defaults will be overwritten.
-    query_fields = [context: default_context()] ++ List.foldl(kw, [], &build_query/2)
+    query_fields = List.foldl(kw, [], &build_query/2)
 
-    quote generated: true, bind_quoted: [source: source, query_fields: query_fields] do
+    quote generated: true, bind_quoted: [
+      source: source,
+      query_fields: query_fields,
+      default_context: default_context()] do
       query =
         case source do
           %Panoramix.Query{} ->
@@ -199,7 +199,13 @@ defmodule Panoramix.Query do
             %Panoramix.Query{data_source: source}
         end
 
-      Map.merge(query, Map.new(query_fields), &Panoramix.Query.merge_query_field/3)
+      case Map.merge(query, Map.new(query_fields), &Panoramix.Query.merge_query_field/3) do
+        merged_query = %Panoramix.Query{context: nil} ->
+          # Add default context if not already present
+          %{merged_query | context: default_context}
+        merged_query = %Panoramix.Query{context: _} ->
+          merged_query
+      end
     end
   end
 
