@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  release:
+    types:
+      - prereleased
+      - released
+
+env:
+    MIX_ENV: test
+    OTP_VER: '26.1'
+    ELIXIR_VER: '1.16.1'
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              # set fetch-depth to 0 for "git describe --tags" to work
+              fetch-depth: 0
+          - name: Setup Erlang/Elixir
+            uses: erlef/setup-beam@v1
+            with:
+              otp-version: ${{ env.OTP_VER }}
+              elixir-version: ${{ env.ELIXIR_VER }}
+              version-type: strict
+
+          - name: Publish to Hex
+            run: bash publish.sh
