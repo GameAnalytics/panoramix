@@ -48,7 +48,7 @@ defmodule Panoramix.MixProject do
       {:timex, "~> 3.1"},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.37.0", only: [:dev, :test], runtime: false}
+      {:ex_doc, "~> 0.38.0", only: [:dev, :test], runtime: false}
     ]
   end
 end
