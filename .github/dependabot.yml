@@ -6,7 +6,18 @@ updates:
     interval: daily
     time: "04:00"
   open-pull-requests-limit: 10
+  groups:
+    mix-minor-updates:
+      patterns:
+      - "*"
+      update-types:
+      - "minor"
+      - "patch"
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: monthly
+  groups:
+    gh-actions:
+      patterns:
+      - "*"
