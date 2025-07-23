@@ -1540,4 +1540,27 @@ defmodule PanoramixTest do
                                   %{"expression" => "foo + 2", "name" => "plus_two", "outputType" => "double", "type" => "expression"}]} =
       query2 |> Panoramix.Query.to_json() |> Jason.decode!()
   end
+
+  test "builds a query with is_null filter" do
+    query =
+      from "table",
+        query_type: "groupBy",
+        filter: is_null(:foo) and not is_null(:bar)
+
+    assert query.filter
+
+    json = Panoramix.Query.to_json(query)
+
+    assert %{
+             "queryType" => "groupBy",
+             "context" => %{"priority" => 0, "timeout" => 120_000},
+             "filter" => %{
+               "type" => "and",
+               "fields" => [
+                 %{"type" => "null", "column" => "foo"},
+                 %{"type" => "not", "field" => %{"type" => "null", "column" => "bar"}}
+               ]
+             }
+           } = Jason.decode!(json)
+  end
 end
