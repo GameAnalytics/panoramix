@@ -15,7 +15,7 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v4
+          - uses: actions/checkout@v5
             with:
               # set fetch-depth to 0 for "git describe --tags" to work
               fetch-depth: 0
