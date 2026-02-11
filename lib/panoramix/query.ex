@@ -529,6 +529,7 @@ defmodule Panoramix.Query do
     post_aggregation_field_accessor(post_aggregator, :fieldName, field_name, options)
   end
 
+  @doc false
   def post_aggregation_field_accessor(type_name, accessor_name, accessor, options \\ []) do
     type_name = normalize_aggregation_type_name(type_name)
     options = List.first(options) || []
@@ -903,6 +904,7 @@ defmodule Panoramix.Query do
     end
   end
 
+  @doc false
   def merge_query_field(key, old_value, new_value)
   when key in [:aggregations, :post_aggregations, :virtual_columns] do
     # For aggregations, post-aggregations and virtual columns, combine
@@ -945,6 +947,7 @@ defmodule Panoramix.Query do
   @doc """
   Convert a Panoramix.Query struct into a map ready to be converted to JSON.
   """
+  @spec to_map(Panoramix.Query.t()) :: map()
   def to_map(%Panoramix.Query{} = query) do
     unless query.query_type do
       raise "query type not specified"
@@ -983,6 +986,7 @@ defmodule Panoramix.Query do
   @doc """
   Convert a Panoramix.Query struct into its JSON representation.
   """
+  @spec to_json(Panoramix.Query.t()) :: binary()
   def to_json(query) do
     query
     |> to_map()
