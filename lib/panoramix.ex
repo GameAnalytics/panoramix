@@ -7,7 +7,7 @@ defmodule Panoramix do
   @moduledoc """
   Post a query to Druid Broker or request its status.
 
-  Use Panoramix.Query to build a query.
+  Use `m:Panoramix.Query` to build a query.
 
   ## Examples
 
