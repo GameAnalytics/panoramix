@@ -895,8 +895,8 @@ defmodule PanoramixTest do
   end
 
   test "build a query using datetime structs" do
-    from = Timex.to_datetime({{2018, 5, 29}, {1, 30, 0}})
-    to = Timex.to_datetime({{2018, 6, 5}, {18, 0, 0}})
+    from = ~U[2018-05-29 01:30:00Z]
+    to = ~U[2018-06-05 18:00:00Z]
 
     query =
       from("my_datasource",
@@ -912,7 +912,7 @@ defmodule PanoramixTest do
     assert %{
              "queryType" => "timeseries",
              "dataSource" => "my_datasource",
-             "intervals" => ["2018-05-29T01:30:00+00:00/2018-06-05T18:00:00+00:00"],
+             "intervals" => ["2018-05-29T01:30:00Z/2018-06-05T18:00:00Z"],
              "granularity" => "day",
              "context" => %{"timeout" => 120_000, "priority" => 0}
            } == decoded
@@ -982,8 +982,8 @@ defmodule PanoramixTest do
           dimensions.__time in intervals([
             "2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00",
             {~D[2018-06-05], ~D[2018-06-12]},
-            {Timex.to_datetime({{2018, 6, 12}, {1, 30, 0}}),
-             Timex.to_datetime({{2018, 6, 19}, {18, 0, 0}})}
+            {~U[2018-06-12 01:30:00Z],
+             ~U[2018-06-19 18:00:00Z]}
           ])
       )
 
@@ -1002,7 +1002,7 @@ defmodule PanoramixTest do
                "intervals" => [
                  "2018-05-29T00:00:00+00:00/2018-06-05T00:00:00+00:00",
                  "2018-06-05/2018-06-12",
-                 "2018-06-12T01:30:00+00:00/2018-06-19T18:00:00+00:00"
+                 "2018-06-12T01:30:00Z/2018-06-19T18:00:00Z"
                ]
              },
              "context" => %{"timeout" => 120_000, "priority" => 0}

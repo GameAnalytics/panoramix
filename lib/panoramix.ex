@@ -270,18 +270,17 @@ defmodule Panoramix do
 
   ## Examples
 
-      iex> Panoramix.format_time! ~D[2018-07-20]
+      iex> Panoramix.format_time!(~D[2018-07-20])
       "2018-07-20"
-      iex> Panoramix.format_time!(
-      ...>   Timex.to_datetime({{2018,07,20},{1,2,3}}))
-      "2018-07-20T01:02:03+00:00"
+      iex> Panoramix.format_time!(~U[2018-07-20 01:02:03Z])
+      "2018-07-20T01:02:03Z"
   """
   def format_time!(%DateTime{} = datetime) do
-    Timex.format!(datetime, "{ISO:Extended}")
+    DateTime.to_iso8601(datetime)
   end
 
   def format_time!(%Date{} = date) do
-    Timex.format!(date, "{ISOdate}")
+    Date.to_iso8601(date)
   end
 
   defmacro __using__(_params) do
